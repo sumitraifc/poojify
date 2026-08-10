@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-cream-100 text-ink-700 font-body antialiased;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display text-ink-900;
+  }
+  :focus-visible {
+    outline: 2px solid theme("colors.primary.500");
+    outline-offset: 2px;
+  }
+}
+
+/* ---------------------------------------------------------
+   GLOBAL REUSABLE CLASSES
+   Change these once here and every page updates together.
+--------------------------------------------------------- */
+@layer components {
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold
+           transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97];
+  }
+  .btn-primary {
+    @apply btn bg-primary-500 text-white shadow-card hover:bg-primary-600;
+  }
+  .btn-outline {
+    @apply btn border border-primary-500 text-primary-600 bg-white hover:bg-primary-50;
+  }
+  .btn-ghost {
+    @apply btn text-ink-700 hover:bg-cream-200;
+  }
+  .btn-danger {
+    @apply btn bg-danger text-white hover:opacity-90;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+  .btn-lg {
+    @apply px-7 py-3.5 text-base;
+  }
+
+  /* Inputs */
+  .input {
+    @apply w-full rounded-lg border border-ink-500/15 bg-white px-3.5 py-2.5 text-sm text-ink-900
+           placeholder:text-ink-500/50 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-100;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-ink-700;
+  }
+
+  /* Cards & surfaces */
+  .card {
+    @apply rounded-xl border border-ink-500/10 bg-white p-4 shadow-card transition-shadow hover:shadow-cardHover;
+  }
+  .section {
+    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+  .section-y {
+    @apply py-10 sm:py-14;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full bg-primary-50 px-2.5 py-1 text-xs font-semibold text-primary-600;
+  }
+  .badge-success {
+    @apply badge bg-success/10 text-success;
+  }
+  .badge-danger {
+    @apply badge bg-danger/10 text-danger;
+  }
+  .link {
+    @apply text-primary-600 hover:text-primary-700 hover:underline underline-offset-2;
+  }
+
+  /* Skeleton shimmer for loaders */
+  .skeleton {
+    @apply relative overflow-hidden bg-cream-200 rounded-lg;
+  }
+  .skeleton::after {
+    content: "";
+    @apply absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/60 to-transparent;
+    animation: shimmer 1.4s infinite;
+  }
+  @keyframes shimmer {
+    100% { transform: translateX(100%); }
+  }
+}
