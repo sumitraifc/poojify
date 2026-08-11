@@ -1,12 +1,40 @@
+import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 
 /**
  * Generic right-side sliding drawer — reused for Login/OTP and Profile menu.
- * Matches the "Welcome to Poojify" / "Hello, Priya" panels from the design.
+ *
+ * Fix: the close (X) button now lives in its own fixed header row, separate
+ * from the scrollable body. Previously it was absolutely positioned *inside*
+ * the same scrolling container as the content, so scrolling the drawer down
+ * carried the button away — making it look like the drawer "wouldn't close"
+ * when in fact the X was just no longer on screen.
  */
 export default function Drawer({ open, onClose, children, width = "max-w-md" }) {
-  return (
+  // Lock background scroll while the drawer is open
+  useEffect(() => {
+    if (open) {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = original;
+      };
+    }
+  }, [open]);
+
+  // Escape key also closes the drawer
+  useEffect(() => {
+    if (!open) return;
+    function handleKey(e) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [open, onClose]);
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -14,7 +42,7 @@ export default function Drawer({ open, onClose, children, width = "max-w-md" }) 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/40"
+            className="fixed inset-0 z-[60] bg-black/40"
             onClick={onClose}
           />
           <motion.aside
@@ -22,19 +50,27 @@ export default function Drawer({ open, onClose, children, width = "max-w-md" }) 
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "tween", duration: 0.3, ease: "easeOut" }}
-            className={`fixed right-0 top-0 z-50 h-full w-full ${width} overflow-y-auto bg-white shadow-cardHover`}
+            onClick={(e) => e.stopPropagation()}
+            className={`fixed right-0 top-0 z-[60] flex h-full w-full ${width} flex-col bg-white shadow-cardHover dark:bg-[#1B140F]`}
           >
-            <button
-              onClick={onClose}
-              className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full hover:bg-cream-200"
-              aria-label="Close"
-            >
-              <X size={18} />
-            </button>
-            {children}
+            {/* Fixed header — close button always stays reachable, never scrolls away */}
+            <div className="flex shrink-0 justify-end p-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-cream-200 dark:hover:bg-white/10"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto px-2 pb-6">{children}</div>
           </motion.aside>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

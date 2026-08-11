@@ -37,8 +37,8 @@ export default function Footer() {
   const { t } = useTranslation();
 
   return (
-    <footer className="mt-16 bg-white">
-      <div className="section-y border-t border-ink-500/10">
+    <footer className="mt-16 bg-white dark:bg-[#1B140F]">
+      <div className="section-y border-t border-ink-500/10 dark:border-white/10">
         <div className="section grid grid-cols-2 gap-6 sm:grid-cols-4">
           {trustBadges.map((b) => (
             <div key={b.title} className="flex items-center gap-3">
@@ -46,19 +46,19 @@ export default function Footer() {
                 <b.icon size={18} />
               </span>
               <div>
-                <p className="text-sm font-semibold">{b.title}</p>
-                <p className="text-xs text-ink-500">{b.subtitle}</p>
+                <p className="text-sm font-semibold dark:text-cream-100">{b.title}</p>
+                <p className="text-xs text-ink-500 dark:text-cream-100/50">{b.subtitle}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="bg-cream-100 py-12">
+      <div className="bg-cream-100 py-12 dark:bg-[#241B14]">
         <div className="section grid grid-cols-2 gap-8 sm:grid-cols-3 lg:grid-cols-6">
           <div className="col-span-2 sm:col-span-3 lg:col-span-2">
             <Logo />
-            <p className="mt-3 max-w-xs text-sm text-ink-500">{t("footer.trustedPlatform")}</p>
+            <p className="mt-3 max-w-xs text-sm text-ink-500 dark:text-cream-100/60">{t("footer.trustedPlatform")}</p>
             <div className="mt-4 flex gap-3">
               {[Facebook, Instagram, Youtube].map((Icon, i) => (
                 <a key={i} href="#" className="flex h-8 w-8 items-center justify-center rounded-full bg-maroon-700 text-white hover:bg-primary-500">
@@ -75,7 +75,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="bg-maroon-700 py-4 text-center text-xs text-white/80">{t("footer.rights")}</div>
+      <div className="bg-maroon-700 dark:bg-black/60 py-4 text-center text-xs text-white/80">{t("footer.rights")}</div>
     </footer>
   );
 }
@@ -83,11 +83,11 @@ export default function Footer() {
 function FooterCol({ title, items }) {
   return (
     <div>
-      <h4 className="mb-3 text-sm font-semibold text-ink-900">{title}</h4>
+      <h4 className="mb-3 text-sm font-semibold text-ink-900 dark:text-cream-100">{title}</h4>
       <ul className="space-y-2">
         {items.map((item) => (
           <li key={item.label}>
-            <Link to={item.to} className="text-sm text-ink-500 hover:text-primary-600">
+            <Link to={item.to} className="text-sm text-ink-500 hover:text-primary-600 dark:text-cream-100/60 dark:hover:text-[#E9C878]">
               {item.label}
             </Link>
           </li>

@@ -1,18 +1,15 @@
 import { Link } from "react-router-dom";
-import { Flame } from "lucide-react";
 
 export default function Logo({ size = "md" }) {
-  const textSize = size === "lg" ? "text-3xl" : size === "sm" ? "text-lg" : "text-2xl";
+  const heightClass = size === "lg" ? "h-14" : size === "sm" ? "h-8" : "h-10";
   return (
-    <Link to="/" className="flex flex-col leading-none">
-      <span className={`flex items-center gap-1 font-display font-bold ${textSize} text-ink-900`}>
-        P
-        <span className="relative inline-flex h-[0.85em] w-[0.85em] items-center justify-center rounded-full bg-primary-100">
-          <Flame size={size === "lg" ? 18 : 14} className="text-primary-500" />
+    <Link to="/" className="flex flex-col items-start leading-none">
+      <img src="/assets/logo.png" alt="Poojify" className={`${heightClass} w-auto object-contain`} />
+      {size !== "sm" && (
+        <span className="mt-0.5 text-[11px] font-medium text-ink-500 dark:text-cream-100/60">
+          Connecting Devotion to You
         </span>
-        OJIFY
-      </span>
-      {size !== "sm" && <span className="text-[11px] font-medium text-ink-500">Connecting Devotion to You</span>}
+      )}
     </Link>
   );
 }

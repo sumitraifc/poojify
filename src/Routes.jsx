@@ -22,6 +22,10 @@ const MyBookings = lazy(() => import("./pages/MyBookings"));
 const Wishlist = lazy(() => import("./pages/Wishlist"));
 const Language = lazy(() => import("./pages/Language"));
 const PurohitRegister = lazy(() => import("./pages/PurohitRegister"));
+const Search = lazy(() => import("./pages/Search"));
+const ProfileEdit = lazy(() => import("./pages/ProfileEdit"));
+const ManageAddress = lazy(() => import("./pages/ManageAddress"));
+const SendFeedback = lazy(() => import("./pages/SendFeedback"));
 
 const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
@@ -36,6 +40,7 @@ export default function AppRoutes() {
           <Route path="/" element={<Home />} />
 
           <Route path="/shop" element={<Shop />} />
+          <Route path="/search" element={<Search />} />
           <Route path="/shop/product/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
@@ -54,6 +59,9 @@ export default function AppRoutes() {
           <Route path="/orders/:id" element={<OrderDetail />} />
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/language" element={<Language />} />
+          <Route path="/profile/edit" element={<ProfileEdit />} />
+          <Route path="/profile/address" element={<ManageAddress />} />
+          <Route path="/profile/feedback" element={<SendFeedback />} />
 
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 export default function TopBar() {
   const { t } = useTranslation();
   return (
-    <div className="hidden bg-primary-50 py-2 text-xs text-ink-700 sm:block">
+    <div className="hidden bg-primary-50 py-2 text-xs text-ink-700 dark:bg-white/5 dark:text-cream-100/80 sm:block">
       <div className="section flex items-center justify-between">
         <span className="flex items-center gap-1.5">
           <Truck size={14} className="text-primary-500" /> {t("topbar.freeDelivery")}

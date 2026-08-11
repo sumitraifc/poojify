@@ -4,6 +4,7 @@ import { Search, ShoppingCart, Menu, LogIn, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import Logo from "./Logo";
+import LocationBar from "./LocationBar";
 import TopBar from "./TopBar";
 import MobileMenu from "./MobileMenu";
 import LoginDrawer from "../../features/auth/LoginDrawer";
@@ -35,11 +36,11 @@ export default function Header() {
 
   function handleSearch(e) {
     e.preventDefault();
-    if (search.trim()) navigate(`/shop?q=${encodeURIComponent(search.trim())}`);
+    if (search.trim()) navigate(`/search?q=${encodeURIComponent(search.trim())}`);
   }
 
   return (
-    <header className="sticky top-0 z-40 bg-white shadow-sm">
+    <header className="sticky top-0 z-40 bg-white shadow-sm dark:bg-[#1B140F] dark:shadow-black/40">
       <TopBar />
 
       <div className="section flex items-center gap-4 py-3">
@@ -48,15 +49,16 @@ export default function Header() {
         </button>
 
         <Logo />
+        <LocationBar />
 
         <form onSubmit={handleSearch} className="hidden flex-1 items-center md:flex">
-          <div className="flex w-full overflow-hidden rounded-lg border border-ink-500/15">
+          <div className="flex w-full overflow-hidden rounded-lg border border-ink-500/15 dark:border-white/15">
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               type="text"
               placeholder={t("nav.search")}
-              className="w-full px-4 py-2.5 text-sm outline-none"
+              className="w-full bg-transparent px-4 py-2.5 text-sm text-ink-900 outline-none placeholder:text-ink-500/50 dark:text-cream-100 dark:placeholder:text-cream-100/40"
             />
             <button type="submit" className="flex items-center justify-center bg-primary-500 px-5 text-white hover:bg-primary-600">
               <Search size={18} />
@@ -66,7 +68,7 @@ export default function Header() {
 
         <div className="ml-auto flex items-center gap-3 sm:gap-4">
           {isAuthenticated ? (
-            <button onClick={() => setProfileOpen(true)} className="flex items-center gap-2 rounded-full border border-ink-500/15 py-1.5 pl-1.5 pr-3 hover:bg-cream-200">
+            <button onClick={() => setProfileOpen(true)} className="flex items-center gap-2 rounded-full border border-ink-500/15 py-1.5 pl-1.5 pr-3 hover:bg-cream-200 dark:border-white/15 dark:hover:bg-white/5">
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-100 text-primary-600">
                 <User size={15} />
               </span>
@@ -79,7 +81,7 @@ export default function Header() {
           )}
 
           <Link to="/cart" className="relative flex items-center gap-2">
-            <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-cream-200">
+            <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-cream-200 dark:bg-white/10">
               <ShoppingCart size={18} />
               {totalItems > 0 && (
                 <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary-500 text-[10px] font-bold text-white">
@@ -88,7 +90,7 @@ export default function Header() {
               )}
             </span>
             <span className="hidden text-xs leading-tight sm:block">
-              <span className="block text-ink-500">{t("nav.myCart")}</span>
+              <span className="block text-ink-500 dark:text-cream-100/60">{t("nav.myCart")}</span>
               <span className="font-semibold">{formatINR(subtotal)}</span>
             </span>
           </Link>
@@ -97,13 +99,13 @@ export default function Header() {
 
       {/* Mobile search */}
       <form onSubmit={handleSearch} className="section pb-3 md:hidden">
-        <div className="flex overflow-hidden rounded-lg border border-ink-500/15">
+        <div className="flex overflow-hidden rounded-lg border border-ink-500/15 dark:border-white/15">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             type="text"
             placeholder={t("nav.search")}
-            className="w-full px-4 py-2 text-sm outline-none"
+            className="w-full bg-transparent px-4 py-2 text-sm text-ink-900 outline-none placeholder:text-ink-500/50 dark:text-cream-100 dark:placeholder:text-cream-100/40"
           />
           <button type="submit" className="flex items-center justify-center bg-primary-500 px-4 text-white">
             <Search size={16} />
@@ -111,14 +113,14 @@ export default function Header() {
         </div>
       </form>
 
-      <nav className="hidden border-t border-ink-500/10 lg:block">
+      <nav className="hidden border-t border-ink-500/10 dark:border-white/10 lg:block">
         <div className="section flex items-center gap-7 py-3 text-sm font-medium">
           {navLinks.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
               end={link.to === "/"}
-              className={({ isActive }) => (isActive ? "text-primary-600" : "text-ink-700 hover:text-primary-600")}
+              className={({ isActive }) => (isActive ? "text-primary-600 dark:text-[#E9C878]" : "text-ink-700 hover:text-primary-600 dark:text-cream-100/80 dark:hover:text-[#E9C878]")}
             >
               {t(link.key)}
             </NavLink>

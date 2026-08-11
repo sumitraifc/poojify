@@ -2,6 +2,8 @@
 
 Full frontend for the Poojify pooja-essentials & purohit-booking platform, built with **React + Vite + Tailwind CSS + Zustand + React Query + Axios**, fully responsive, animated with **Framer Motion**, and multi-language ready with **i18next**.
 
+> 🔄 **Continuing this project in a new chat?** Read [`CONTINUATION_PROMPT.md`](./CONTINUATION_PROMPT.md) first — paste it into a fresh Claude conversation along with this zip to resume with full context.
+
 ## 🚀 Getting Started
 
 ```bash

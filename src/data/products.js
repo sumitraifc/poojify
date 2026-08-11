@@ -22,6 +22,12 @@ export const products = [
   { id: "p10", name: "Vastu Pooja Kit", price: 299, mrp: 399, image: "/assets/products/vastu-kit.jpg", rating: 4.5, reviews: 44, category: "pooja-kits" },
   { id: "p11", name: "Rudrabhishek Kit", price: 599, mrp: 799, image: "/assets/products/rudrabhishek-kit.jpg", rating: 4.6, reviews: 38, category: "pooja-kits" },
   { id: "p12", name: "Premium Incense Sticks", price: 198, mrp: 220, image: "/assets/products/incense.jpg", rating: 4.4, reviews: 26, category: "agarbatti-dhoop" },
+  { id: "p13", name: "Premium Lavender Dhoop Sticks Box - 1 Pack", price: 11, mrp: 15, image: "/assets/products/agarbatti.jpg", rating: 4.6, reviews: 34, category: "agarbatti-dhoop" },
+  { id: "p14", name: "Premium Rose-Dhoop Sticks - 1 pack", price: 11, mrp: 15, image: "/assets/products/agarbatti.jpg", rating: 4.5, reviews: 28, category: "agarbatti-dhoop" },
+  { id: "p15", name: "Premium Chandan Dry Stick Dhoop - 1 Pack", price: 11, mrp: 15, image: "/assets/products/agarbatti.jpg", rating: 4.7, reviews: 41, category: "agarbatti-dhoop" },
+  { id: "p16", name: "Hari-Darshan Kapur - Bamboo Less Dhoop Stick", price: 113, mrp: 125, image: "/assets/products/camphor.jpg", rating: 4.5, reviews: 19, category: "agarbatti-dhoop" },
+  { id: "p17", name: "Hari-Darshan Tulsi Dhoop Sticks", price: 99, mrp: 120, image: "/assets/products/agarbatti.jpg", rating: 4.6, reviews: 22, category: "agarbatti-dhoop" },
+  { id: "p18", name: "Hari-Darshan Havan Dhoop Sticks", price: 105, mrp: 130, image: "/assets/products/havan-kit.jpg", rating: 4.4, reviews: 17, category: "agarbatti-dhoop" },
 ];
 
 export const comboOffers = [

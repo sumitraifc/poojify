@@ -1,5 +1,17 @@
 /** @type {import('tailwindcss').Config} */
+
+// Lets ink/cream utility classes (text-ink-900, bg-cream-100, border-ink-500/10 ...)
+// automatically resolve to different values in dark mode via CSS variables,
+// without needing dark: prefixes sprinkled on every element.
+function withOpacityValue(variable) {
+  return ({ opacityValue }) => {
+    if (opacityValue === undefined) return `rgb(var(${variable}))`;
+    return `rgb(var(${variable}) / ${opacityValue})`;
+  };
+}
+
 export default {
+  darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
@@ -26,21 +38,30 @@ export default {
           700: "#2B0F09", // footer / deep brown-maroon
         },
         cream: {
-          50: "#FFFDF9",
-          100: "#FDF6EC", // page background
-          200: "#FBF0DE",
+          50: withOpacityValue("--color-cream-50"),
+          100: withOpacityValue("--color-cream-100"), // page background
+          200: withOpacityValue("--color-cream-200"),
         },
         ink: {
-          500: "#4A3B33",
-          700: "#2E2521",
-          900: "#1C1512", // headings
+          500: withOpacityValue("--color-ink-500"),
+          700: withOpacityValue("--color-ink-700"),
+          900: withOpacityValue("--color-ink-900"), // headings
+        },
+        // Dark theme surfaces + halka dark-yellow accent
+        dark: {
+          bg: "#1B140F",
+          surface: "#241B14",
+          card: "#2A1F17",
+          border: "rgba(255,255,255,0.08)",
+          gold: "#D9A441", // halka dark yellow accent for dark mode
+          goldLight: "#E9C878",
         },
         success: "#1E9E5A",
         danger: "#E4433A",
       },
       fontFamily: {
         display: ["'Poppins'", "sans-serif"],
-        body: ["'Inter'", "sans-serif"],
+        body: ["'Poppins'", "sans-serif"],
       },
       borderRadius: {
         xl: "0.9rem",

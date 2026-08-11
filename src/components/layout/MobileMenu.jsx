@@ -34,7 +34,7 @@ export default function MobileMenu({ open, onClose, onLoginClick }) {
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "tween", duration: 0.25 }}
-            className="fixed left-0 top-0 z-50 h-full w-72 overflow-y-auto bg-white p-5 shadow-cardHover lg:hidden"
+            className="fixed left-0 top-0 z-50 h-full w-72 overflow-y-auto bg-white p-5 shadow-cardHover dark:bg-[#1B140F] lg:hidden"
           >
             <div className="mb-6 flex items-center justify-between">
               <Logo size="sm" />

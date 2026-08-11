@@ -2,15 +2,17 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   Pencil, Crown, Package, Heart, User, MapPin, Headset, MessageSquare,
-  Sun, Globe, Shield, FileText, RefreshCw, Info, LogOut, ChevronRight,
+  Sun, Moon, Globe, Shield, FileText, RefreshCw, Info, LogOut, ChevronRight,
 } from "lucide-react";
 import Drawer from "../../components/common/Drawer";
 import { useAuthStore } from "../../store/authStore";
+import { useThemeStore } from "../../store/themeStore";
 
 export default function ProfileDrawer({ open, onClose }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const { theme, toggleTheme } = useThemeStore();
 
   function go(to) {
     onClose();
@@ -75,12 +77,26 @@ export default function ProfileDrawer({ open, onClose }) {
 
         <Section title="Account Details" links={accountLinks} onNavigate={go} />
 
-        <p className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wide text-ink-500">Appearance</p>
+        <p className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wide text-ink-500 dark:text-cream-100/50">Appearance</p>
         <div className="mb-5 space-y-1">
-          <RowItem icon={Sun} label="Theme" value="Light" />
-          <button onClick={() => go("/language")} className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm hover:bg-cream-100">
+          <button
+            onClick={toggleTheme}
+            className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm hover:bg-cream-100 dark:hover:bg-white/5"
+          >
+            <span className="flex items-center gap-3">
+              {theme === "dark" ? <Moon size={16} className="text-[#E9C878]" /> : <Sun size={16} className="text-primary-500" />}
+              Theme
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="text-ink-500 dark:text-cream-100/60">{theme === "dark" ? "Dark" : "Light"}</span>
+              <span className={`relative h-5 w-9 rounded-full transition-colors ${theme === "dark" ? "bg-[#D9A441]" : "bg-ink-500/20"}`}>
+                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${theme === "dark" ? "translate-x-4" : "translate-x-0.5"}`} />
+              </span>
+            </span>
+          </button>
+          <button onClick={() => go("/language")} className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm hover:bg-cream-100 dark:hover:bg-white/5">
             <span className="flex items-center gap-3"><Globe size={16} className="text-primary-500" /> Language</span>
-            <span className="flex items-center gap-1 text-ink-500">{t("brand") === "पूजिफाई" ? "हिन्दी" : "English"} <ChevronRight size={14} /></span>
+            <span className="flex items-center gap-1 text-ink-500 dark:text-cream-100/60">{t("brand") === "पूजिफाई" ? "हिन्दी" : "English"} <ChevronRight size={14} /></span>
           </button>
         </div>
 

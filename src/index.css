@@ -3,6 +3,28 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* Light theme values — R G B channels, consumed via rgb(var(...) / alpha) */
+    --color-cream-50: 255 253 249;
+    --color-cream-100: 253 246 236;
+    --color-cream-200: 251 240 222;
+    --color-ink-500: 74 59 51;
+    --color-ink-700: 46 37 33;
+    --color-ink-900: 28 21 18;
+  }
+
+  .dark {
+    /* Dark theme values — deep brown surfaces, warm light text (halka dark-yellow tint) */
+    --color-cream-50: 27 20 15;
+    --color-cream-100: 27 20 15;
+    --color-cream-200: 42 31 23;
+    --color-ink-500: 199 185 167;
+    --color-ink-700: 224 212 195;
+    --color-ink-900: 247 236 217;
+  }
+}
+
+@layer base {
   html {
     scroll-behavior: smooth;
   }
@@ -49,7 +71,7 @@
 
   /* Inputs */
   .input {
-    @apply w-full rounded-lg border border-ink-500/15 bg-white px-3.5 py-2.5 text-sm text-ink-900
+    @apply w-full rounded-lg border border-ink-500/15 bg-cream-50 px-3.5 py-2.5 text-sm text-ink-900
            placeholder:text-ink-500/50 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-100;
   }
   .label {
@@ -58,7 +80,7 @@
 
   /* Cards & surfaces */
   .card {
-    @apply rounded-xl border border-ink-500/10 bg-white p-4 shadow-card transition-shadow hover:shadow-cardHover;
+    @apply rounded-xl border border-ink-500/10 bg-cream-50 p-4 shadow-card transition-shadow hover:shadow-cardHover;
   }
   .section {
     @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
@@ -91,4 +113,56 @@
   @keyframes shimmer {
     100% { transform: translateX(100%); }
   }
+}
+
+/* ---------------------------------------------------------
+   DARK THEME — halka dark-yellow accent on deep brown surfaces.
+   ink and cream colors already auto-flip via the CSS variables
+   above. These rules only cover things that AREN'T ink/cream
+   (accent color swaps, borders, inputs, buttons).
+--------------------------------------------------------- */
+.dark .card {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.dark .input {
+  background-color: rgb(var(--color-cream-200));
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.dark .btn-primary {
+  background-color: #D9A441;
+  color: #1B140F;
+}
+.dark .btn-primary:hover {
+  background-color: #E9C878;
+}
+.dark .btn-outline {
+  background-color: transparent;
+  border-color: #D9A441;
+  color: #E9C878;
+}
+.dark .btn-outline:hover {
+  background-color: rgba(217, 164, 65, 0.12);
+}
+.dark .btn-ghost:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+.dark .badge {
+  background-color: rgba(217, 164, 65, 0.15);
+  color: #E9C878;
+}
+.dark .badge-success {
+  background-color: rgba(30, 158, 90, 0.15);
+}
+.dark .badge-danger {
+  background-color: rgba(228, 67, 58, 0.15);
+}
+.dark .link {
+  color: #E9C878;
+}
+.dark .link:hover {
+  color: #F5DBA0;
+}
+.dark ::selection {
+  background-color: #D9A441;
+  color: #1B140F;
 }

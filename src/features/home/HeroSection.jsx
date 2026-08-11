@@ -15,7 +15,7 @@ export default function HeroSection() {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    const timer = setInterval(() => setIndex((i) => (i + 1) % slides.length), 500000);
+    const timer = setInterval(() => setIndex((i) => (i + 1) % slides.length), 5000);
     return () => clearInterval(timer);
   }, []);
 
@@ -54,12 +54,12 @@ export default function HeroSection() {
             />
           </AnimatePresence>
 
-          {/* <div className="absolute left-4 top-4 rounded-lg bg-black/50 px-3 py-2 text-white backdrop-blur">
+          <div className="absolute left-4 top-4 rounded-lg bg-black/50 px-3 py-2 text-white backdrop-blur">
             <p className="text-xs">Special Offer</p>
             <p className="text-sm font-bold">
               Up to <span className="text-primary-300">15% OFF</span> on Combo Puja
             </p>
-          </div> */}
+          </div>
 
           <button
             onClick={() => setIndex((i) => (i - 1 + slides.length) % slides.length)}
