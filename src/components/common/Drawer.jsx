@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
@@ -15,24 +15,22 @@ import { X } from "lucide-react";
 export default function Drawer({ open, onClose, children, width = "max-w-md" }) {
   // Lock background scroll while the drawer is open
   useEffect(() => {
-    if (open) {
-      const original = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = original;
-      };
-    }
+    if (!open) return;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
   }, [open]);
+
+  const handleClose = useCallback(() => onClose(), [onClose]);
 
   // Escape key also closes the drawer
   useEffect(() => {
     if (!open) return;
     function handleKey(e) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [open, onClose]);
+  }, [open, handleClose]);
 
   return createPortal(
     <AnimatePresence>
@@ -43,7 +41,7 @@ export default function Drawer({ open, onClose, children, width = "max-w-md" }) 
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] bg-black/40"
-            onClick={onClose}
+            onClick={handleClose}
           />
           <motion.aside
             initial={{ x: "100%" }}
@@ -51,13 +49,13 @@ export default function Drawer({ open, onClose, children, width = "max-w-md" }) 
             exit={{ x: "100%" }}
             transition={{ type: "tween", duration: 0.3, ease: "easeOut" }}
             onClick={(e) => e.stopPropagation()}
-            className={`fixed right-0 top-0 z-[60] flex h-full w-full ${width} flex-col bg-white shadow-cardHover dark:bg-[#1B140F]`}
+            className={`fixed right-0 top-0 z-[61] flex h-full w-full ${width} flex-col bg-white shadow-cardHover dark:bg-[#1B140F]`}
           >
             {/* Fixed header — close button always stays reachable, never scrolls away */}
             <div className="flex shrink-0 justify-end p-4">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-cream-200 dark:hover:bg-white/10"
                 aria-label="Close"
               >

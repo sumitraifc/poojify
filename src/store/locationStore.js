@@ -17,13 +17,16 @@ export const useLocationStore = create(
        * is only ever prompted the very first time they open the app. */
       captureOnce: () => {
         if (get().captured || typeof navigator === "undefined" || !navigator.geolocation) return;
-        set({ captured: true }); // mark immediately so we never re-prompt, even if denied
         navigator.geolocation.getCurrentPosition(
           (pos) => {
-            set({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+            set({
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+              captured: true,
+            });
           },
           () => {
-            // Permission denied or unavailable — captured stays true, we just won't have coords
+            set({ captured: true }); // denied — mark so we don't re-prompt
           },
           { enableHighAccuracy: true, timeout: 8000 }
         );

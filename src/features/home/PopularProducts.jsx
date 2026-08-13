@@ -1,31 +1,47 @@
-import { useQuery } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import SectionHeader from "../../components/common/SectionHeader";
 import ProductCard from "../../components/common/ProductCard";
-import { ProductCardSkeleton } from "../../components/common/Loader";
-import { products } from "../../data/products";
 
-// Simulated API call — swap with axiosClient.get("/products/popular") when backend is ready
-function fetchPopularProducts() {
-  return new Promise((resolve) => setTimeout(() => resolve(products.slice(0, 6)), 500));
-}
+// list = hamesha horizontal scroll
+// grid = hamesha grid
+const listClass = "flex gap-4 overflow-x-auto pb-2 scrollbar-hide";
+const gridClass = "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4";
 
-export default function PopularProducts() {
-  const { t } = useTranslation();
-  const { data, isLoading } = useQuery({
-    queryKey: ["popular-products"],
-    queryFn: fetchPopularProducts,
-  });
+export default function PopularProducts({ data }) {
+  const items = data?.items || [];
+  const title = data?.title || "Products";
+  const viewType = data?.view_type || "list";
+
+  if (!items.length) return null;
+
+  const normalized = items.map((p) => ({
+    id: p.id,
+    name: p.name,
+    price: p.discount_price ?? p.price,
+    mrp: p.price,
+    image: p.image,
+    images: p.images || [],
+    rating: p.product_rating || 0,
+    category_id: p.category_id,
+    sub_category_id: p.sub_category_id,
+  }));
 
   return (
     <section className="section-y pt-0">
       <div className="section">
-        <SectionHeader title={t("home.popularProducts")} viewAllLink="/shop" />
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          {isLoading
-            ? Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)
-            : data.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+        <SectionHeader title={title} viewAllLink="/shop" />
+        <div className={viewType === "grid" ? gridClass : listClass}>
+          {normalized.map((p, i) => (
+            <div key={p.id} className={viewType === "list" ? "w-40 shrink-0" : ""}>
+              <ProductCard product={p} index={i} />
+            </div>
+          ))}
         </div>
+        {data?.has_more && (
+          <div className="mt-6 text-center">
+            <Link to="/shop" className="btn-outline">View All {data.total_count} Products</Link>
+          </div>
+        )}
       </div>
     </section>
   );

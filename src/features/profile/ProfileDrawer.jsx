@@ -16,7 +16,7 @@ export default function ProfileDrawer({ open, onClose }) {
 
   function go(to) {
     onClose();
-    navigate(to);
+    setTimeout(() => navigate(to), 0);
   }
 
   function handleLogout() {
@@ -53,7 +53,7 @@ export default function ProfileDrawer({ open, onClose }) {
               <p className="text-sm text-ink-500">{user?.phone || "+91 98765 43210"}</p>
             </div>
           </div>
-          <button className="flex h-8 w-8 items-center justify-center rounded-full border border-ink-500/15 hover:bg-cream-200">
+          <button onClick={() => go("/profile/edit")} className="flex h-8 w-8 items-center justify-center rounded-full border border-ink-500/15 hover:bg-cream-200">
             <Pencil size={14} />
           </button>
         </div>

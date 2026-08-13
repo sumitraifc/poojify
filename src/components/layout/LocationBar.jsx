@@ -15,14 +15,14 @@ export default function LocationBar() {
   return (
     <button
       onClick={() => navigate("/profile/address")}
-      className="hidden shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-left hover:bg-cream-200 dark:hover:bg-white/5 md:flex"
+      className="flex shrink-0 items-center gap-1 rounded-lg px-1.5 py-1 text-left hover:bg-cream-200 dark:hover:bg-white/5"
     >
-      <MapPin size={17} className="shrink-0 text-primary-500" />
+      <MapPin size={13} className="shrink-0 text-primary-500 md:size-[17px]" />
       <span className="leading-tight">
-        <span className="block text-[10px] text-ink-500">Deliver to</span>
-        <span className="block max-w-[130px] truncate text-xs font-semibold">{label}</span>
+        <span className="block text-[9px] text-ink-500 md:text-[10px]">Deliver to</span>
+        <span className="block max-w-[90px] truncate text-[10px] font-semibold md:max-w-[130px] md:text-xs">{label}</span>
       </span>
-      <ChevronDown size={13} className="text-ink-500" />
+      <ChevronDown size={11} className="text-ink-500 md:size-[13px]" />
     </button>
   );
 }

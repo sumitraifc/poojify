@@ -74,7 +74,7 @@ export default function ProductCard({ product, index = 0 }) {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.85, opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                className="flex items-center gap-2.5 rounded-2xl border border-primary-200 bg-white px-3 py-2.5 shadow-cardHover"
+                className="flex items-center gap-2.5 rounded-2xl border border-primary-200 bg-white px-3 py-2.5 shadow-cardHover z-50"
               >
                 <button
                   onClick={() => (qty === 1 ? removeItem(product.id) : updateQty(product.id, qty - 1))}

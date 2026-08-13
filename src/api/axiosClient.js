@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 import { useAuthStore } from "../store/authStore";
 
 const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "https://api.poojify.com/v1",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "https://root.poojify.in/api",
   timeout: 15000,
   headers: { "Content-Type": "application/json" },
 });

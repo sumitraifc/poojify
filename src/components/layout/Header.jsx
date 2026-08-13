@@ -49,9 +49,11 @@ export default function Header() {
         </button>
 
         <Logo />
+        {/* Location — mobile: next to logo | md+: in header row */}
         <LocationBar />
 
-        <form onSubmit={handleSearch} className="hidden flex-1 items-center md:flex">
+        {/* Search — desktop only inline */}
+        <form onSubmit={handleSearch} className="hidden flex-1 items-center lg:flex">
           <div className="flex w-full overflow-hidden rounded-lg border border-ink-500/15 dark:border-white/15">
             <input
               value={search}
@@ -97,21 +99,23 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile search */}
-      <form onSubmit={handleSearch} className="section pb-3 md:hidden">
-        <div className="flex overflow-hidden rounded-lg border border-ink-500/15 dark:border-white/15">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            type="text"
-            placeholder={t("nav.search")}
-            className="w-full bg-transparent px-4 py-2 text-sm text-ink-900 outline-none placeholder:text-ink-500/50 dark:text-cream-100 dark:placeholder:text-cream-100/40"
-          />
-          <button type="submit" className="flex items-center justify-center bg-primary-500 px-4 text-white">
-            <Search size={16} />
-          </button>
-        </div>
-      </form>
+      {/* Search bar — below header row on mobile + tablet */}
+      <div className="section pb-3 lg:hidden">
+        <form onSubmit={handleSearch}>
+          <div className="flex overflow-hidden rounded-lg border border-ink-500/15 dark:border-white/15">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              type="text"
+              placeholder={t("nav.search")}
+              className="w-full bg-transparent px-4 py-2 text-sm text-ink-900 outline-none placeholder:text-ink-500/50 dark:text-cream-100 dark:placeholder:text-cream-100/40"
+            />
+            <button type="submit" className="flex items-center justify-center bg-primary-500 px-4 text-white">
+              <Search size={16} />
+            </button>
+          </div>
+        </form>
+      </div>
 
       <nav className="hidden border-t border-ink-500/10 dark:border-white/10 lg:block">
         <div className="section flex items-center gap-7 py-3 text-sm font-medium">
