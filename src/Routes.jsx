@@ -69,6 +69,7 @@ export default function AppRoutes() {
           <Route path="/privacy-policy" element={<PolicyPage />} />
           <Route path="/shipping-policy" element={<PolicyPage />} />
           <Route path="/refund-policy" element={<PolicyPage />} />
+          <Route path="/child-safety" element={<PolicyPage />} />
           <Route path="/faq" element={<PolicyPage />} />
 
           <Route path="*" element={<NotFound />} />

@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import { Heart, Plus, Minus, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useCartStore } from "../../store/cartStore";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useWishlistStore } from "../../store/wishlistStore";
+import { updateCart } from "../../api/cartApi";
 import { formatINR, discountPercent } from "../../utils/format";
 import { cn } from "../../utils/cn";
 
@@ -17,13 +18,21 @@ import { cn } from "../../utils/cn";
  * manages quantity instead of just being a static plus icon.
  */
 export default function ProductCard({ product, index = 0 }) {
-  const { items, addItem, updateQty, removeItem } = useCartStore();
   const { toggle, isWishlisted } = useWishlistStore();
   const wishlisted = isWishlisted(product.id);
   const off = discountPercent(product.mrp, product.price);
+  const queryClient = useQueryClient();
 
-  const cartItem = items.find((i) => i.id === product.id);
-  const qty = cartItem?.qty || 0;
+  // Read qty from cached cart-list API data
+  const cartData = queryClient.getQueryData(["cart-list"]);
+  const cartItems = Array.isArray(cartData?.data) ? cartData.data : Array.isArray(cartData) ? cartData : [];
+  const cartItem = cartItems.find((i) => i.item_id === product.id);
+  const qty = Number(cartItem?.quantity ?? 0);
+
+  const { mutate: cartAction } = useMutation({
+    mutationFn: ({ action }) => updateCart(product.id, product.type ?? "product", action),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cart-list"] }),
+  });
 
   return (
     <motion.div
@@ -61,7 +70,7 @@ export default function ProductCard({ product, index = 0 }) {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.7, opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                onClick={() => addItem(product, 1)}
+                onClick={() => cartAction({ action: 1 })}
                 className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary-200 bg-white text-primary-600 shadow-cardHover transition hover:bg-primary-50"
                 aria-label="Add to cart"
               >
@@ -77,14 +86,14 @@ export default function ProductCard({ product, index = 0 }) {
                 className="flex items-center gap-2.5 rounded-2xl border border-primary-200 bg-white px-3 py-2.5 shadow-cardHover z-50"
               >
                 <button
-                  onClick={() => (qty === 1 ? removeItem(product.id) : updateQty(product.id, qty - 1))}
+                  onClick={() => cartAction({ action: -1 })}
                   aria-label="Decrease quantity"
                   className="text-danger"
                 >
                   {qty === 1 ? <Trash2 size={16} /> : <Minus size={16} />}
                 </button>
                 <span className="min-w-[1ch] text-center text-sm font-bold">{qty}</span>
-                <button onClick={() => updateQty(product.id, qty + 1)} aria-label="Increase quantity" className="text-primary-600">
+                <button onClick={() => cartAction({ action: 1 })} aria-label="Increase quantity" className="text-primary-600">
                   <Plus size={16} />
                 </button>
               </motion.div>

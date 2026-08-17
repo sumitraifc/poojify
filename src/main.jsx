@@ -8,6 +8,7 @@ import "./i18n";
 import "./index.css";
 import { useThemeStore } from "./store/themeStore.js";
 import { useLocationStore } from "./store/locationStore.js";
+import { useSettingsStore } from "./store/settingsStore.js";
 import AppRoutes from "./Routes.jsx";
 
 // Apply saved theme immediately on boot to avoid a light-mode flash
@@ -15,6 +16,7 @@ document.documentElement.classList.toggle("dark", useThemeStore.getState().theme
 
 // Ask for the user's location only once, ever — first app load only (see captureOnce)
 useLocationStore.getState().captureOnce();
+useSettingsStore.getState().load();
 
 const queryClient = new QueryClient({
   defaultOptions: {

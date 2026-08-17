@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { MapPin, Plus, Pencil, Trash2, Lock, Smartphone, CreditCard, Landmark, Wallet, Truck, ShieldCheck } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { MapPin, Plus, Pencil, Trash2, Lock, Smartphone, CreditCard, Truck, ShieldCheck } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
 import Button from "../components/common/Button";
-import { useCartStore } from "../store/cartStore";
+import { PageLoader } from "../components/common/Loader";
+import { getCartList, getGstPaymode, placeOrder } from "../api/cartApi";
 import { formatINR } from "../utils/format";
 import { showToast } from "../components/common/Toast";
 
@@ -14,33 +15,71 @@ const addresses = [
   { id: "a2", label: "Work", isDefault: false, name: "Harsh Singh", line: "Plot No. 45, Malviya Nagar, Jaipur, Rajasthan - 302017", phone: "+91 91234 56789" },
 ];
 
-const paymentMethods = [
-  { id: "upi", icon: Smartphone, title: "UPI / QR Code", subtitle: "Pay using any UPI App" },
-  { id: "card", icon: CreditCard, title: "Credit / Debit Card", subtitle: "Visa, Mastercard, RuPay & more" },
-  { id: "netbanking", icon: Landmark, title: "Net Banking", subtitle: "All major banks supported" },
-  { id: "wallet", icon: Wallet, title: "Wallets", subtitle: "Paytm Wallet, PhonePe & more" },
-  { id: "cod", icon: Truck, title: "Cash on Delivery (COD)", subtitle: "Pay when you receive" },
-];
+const payIconMap = {
+  COD: Truck,
+  ONLINE: CreditCard,
+};
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { items, subtotal, discount, clearCart } = useCartStore();
   const [addressId, setAddressId] = useState("a1");
-  const [payment, setPayment] = useState("upi");
-  const [placing, setPlacing] = useState(false);
+  const [payment, setPayment] = useState(null);
 
-  const deliveryCharge = 0;
-  const grandTotal = subtotal() + deliveryCharge;
-
-  function handlePlaceOrder() {
-    setPlacing(true);
-    setTimeout(() => {
-      setPlacing(false);
-      clearCart();
+  const { mutate: submitOrder, isLoading: placing } = useMutation({
+    mutationFn: (body) => placeOrder(body),
+    onSuccess: () => {
       showToast.success("Order placed successfully!");
       navigate("/orders");
-    }, 900);
+    },
+    onError: (err) => showToast.error(err?.message ?? "Failed to place order"),
+  });
+
+  const { data: cartData, isLoading: cartLoading } = useQuery({
+    queryKey: ["cart-list"],
+    queryFn: getCartList,
+    select: (res) => res?.data ?? [],
+  });
+
+  const { data: config, isLoading: configLoading } = useQuery({
+    queryKey: ["gst-paymode"],
+    queryFn: getGstPaymode,
+    select: (res) => res?.data,
+    onSuccess: (data) => {
+      if (data?.payment_methods?.length && !payment)
+        setPayment(data.payment_methods[0].name);
+    },
+  });
+
+  const items = (Array.isArray(cartData) ? cartData : []).map((i) => ({
+    id: i.item_id,
+    name: i.name,
+    image: i.main_image,
+    price: Number(i.discount_price ?? i.price ?? 0),
+    mrp: Number(i.price ?? 0),
+    qty: Number(i.quantity ?? 1),
+  }));
+
+  const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+  const gstPct = config?.gst_percentage ?? 0;
+  const deliveryCharge = config?.charges?.find((c) => c.name === "DELIVERY_CHARGE")?.value ?? 0;
+  const gstAmount = Math.round(subtotal * gstPct / 100);
+  const grandTotal = subtotal + gstAmount + Number(deliveryCharge);
+
+  // Set default payment once config loads
+  const paymentMethods = config?.payment_methods ?? [];
+  if (paymentMethods.length && !payment) setPayment(paymentMethods[0].name);
+
+  function handlePlaceOrder() {
+    if (!payment) return showToast.error("Select a payment method");
+    if (!addressId) return showToast.error("Select a delivery address");
+    submitOrder({
+      coupon_id: 0,
+      payment_method: payment,
+      address_id: addressId,
+    });
   }
+
+  if (cartLoading || configLoading) return <PageLoader />;
 
   return (
     <PageTransition>
@@ -94,21 +133,25 @@ export default function Checkout() {
               <div className="card">
                 <h3 className="mb-4 font-semibold">Payment Method</h3>
                 <div className="space-y-2.5">
-                  {paymentMethods.map((pm) => (
-                    <label
-                      key={pm.id}
-                      className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3.5 transition ${
-                        payment === pm.id ? "border-primary-500 bg-primary-50" : "border-ink-500/15 hover:border-primary-300"
-                      }`}
-                    >
-                      <input type="radio" name="payment" className="accent-primary-500" checked={payment === pm.id} onChange={() => setPayment(pm.id)} />
-                      <pm.icon size={18} className="text-primary-500" />
-                      <div>
-                        <p className="text-sm font-medium">{pm.title}</p>
-                        <p className="text-xs text-ink-500">{pm.subtitle}</p>
-                      </div>
-                    </label>
-                  ))}
+                  {paymentMethods.map((pm) => {
+                    const Icon = payIconMap[pm.name] ?? Smartphone;
+                    const subtitle = pm.name === "COD" ? "Pay when you receive" : "UPI, Card, Net Banking & more";
+                    return (
+                      <label
+                        key={pm.id}
+                        className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3.5 transition ${
+                          payment === pm.name ? "border-primary-500 bg-primary-50" : "border-ink-500/15 hover:border-primary-300"
+                        }`}
+                      >
+                        <input type="radio" name="payment" className="accent-primary-500" checked={payment === pm.name} onChange={() => setPayment(pm.name)} />
+                        <Icon size={18} className="text-primary-500" />
+                        <div>
+                          <p className="text-sm font-medium">{pm.name === "COD" ? "Cash on Delivery" : "Pay Online"}</p>
+                          <p className="text-xs text-ink-500">{subtitle}</p>
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
                 <div className="mt-4 flex items-center gap-2 rounded-lg bg-success/10 p-3 text-xs text-success">
                   <ShieldCheck size={14} /> Your payment is safe and secure with us.
@@ -116,7 +159,7 @@ export default function Checkout() {
               </div>
             </div>
 
-            {/* Order summary */}
+            {/* Order Summary */}
             <div className="card h-fit">
               <h3 className="mb-4 font-semibold">Order Summary</h3>
               <div className="mb-3 max-h-56 space-y-3 overflow-y-auto">
@@ -132,9 +175,13 @@ export default function Checkout() {
                 ))}
               </div>
               <div className="space-y-2 border-t border-ink-500/10 pt-3 text-sm">
-                <div className="flex justify-between"><span className="text-ink-500">Subtotal ({items.length} Items)</span><span>{formatINR(subtotal())}</span></div>
-                {discount() > 0 && <div className="flex justify-between"><span className="text-ink-500">Discount</span><span className="text-success">- {formatINR(discount())}</span></div>}
-                <div className="flex justify-between"><span className="text-ink-500">Delivery Charges</span><span className="text-success">FREE</span></div>
+                <Row label={`Subtotal (${items.length} Items)`} value={formatINR(subtotal)} />
+                {gstPct > 0 && <Row label={`GST (${gstPct}%)`} value={formatINR(gstAmount)} />}
+                <Row
+                  label="Delivery Charges"
+                  value={Number(deliveryCharge) === 0 ? "FREE" : formatINR(deliveryCharge)}
+                  valueClass={Number(deliveryCharge) === 0 ? "text-success" : ""}
+                />
               </div>
               <div className="mt-3 flex items-center justify-between border-t border-ink-500/10 pt-3">
                 <span className="font-semibold">Grand Total</span>
@@ -151,5 +198,14 @@ export default function Checkout() {
         </div>
       </div>
     </PageTransition>
+  );
+}
+
+function Row({ label, value, valueClass = "" }) {
+  return (
+    <div className="flex justify-between">
+      <span className="text-ink-500">{label}</span>
+      <span className={`font-medium ${valueClass}`}>{value}</span>
+    </div>
   );
 }

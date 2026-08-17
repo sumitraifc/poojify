@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Search, ShoppingCart, Menu, LogIn, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 
 import Logo from "./Logo";
 import LocationBar from "./LocationBar";
@@ -9,8 +10,8 @@ import TopBar from "./TopBar";
 import MobileMenu from "./MobileMenu";
 import LoginDrawer from "../../features/auth/LoginDrawer";
 import ProfileDrawer from "../../features/profile/ProfileDrawer";
-import { useCartStore } from "../../store/cartStore";
 import { useAuthStore } from "../../store/authStore";
+import { getCartList } from "../../api/cartApi";
 import { formatINR } from "../../utils/format";
 
 const navLinks = [
@@ -30,9 +31,15 @@ export default function Header() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const totalItems = useCartStore((s) => s.totalItems());
-  const subtotal = useCartStore((s) => s.subtotal());
-  const { isAuthenticated } = useAuthStore();
+  const { data: cartData } = useQuery({
+    queryKey: ["cart-list"],
+    queryFn: getCartList,
+    select: (res) => res?.data ?? [],
+  });
+  const cartItems = Array.isArray(cartData) ? cartData : [];
+  const cartCount = cartItems.reduce((sum, i) => sum + Number(i.quantity ?? 1), 0);
+  const cartSubtotal = cartItems.reduce((sum, i) => sum + Number(i.discount_price ?? i.price ?? 0) * Number(i.quantity ?? 1), 0);
+  const { isAuthenticated, user } = useAuthStore();
 
   function handleSearch(e) {
     e.preventDefault();
@@ -74,7 +81,7 @@ export default function Header() {
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-100 text-primary-600">
                 <User size={15} />
               </span>
-              <span className="hidden text-sm font-medium sm:inline">Hello, Priya</span>
+              <span className="hidden text-sm font-medium sm:inline">Hello, {user?.name || "User"}</span>
             </button>
           ) : (
             <button onClick={() => setLoginOpen(true)} className="btn-outline hidden sm:inline-flex">
@@ -85,15 +92,15 @@ export default function Header() {
           <Link to="/cart" className="relative flex items-center gap-2">
             <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-cream-200 dark:bg-white/10">
               <ShoppingCart size={18} />
-              {totalItems > 0 && (
+              {cartCount > 0 && (
                 <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary-500 text-[10px] font-bold text-white">
-                  {totalItems}
+                  {cartCount}
                 </span>
               )}
             </span>
             <span className="hidden text-xs leading-tight sm:block">
               <span className="block text-ink-500 dark:text-cream-100/60">{t("nav.myCart")}</span>
-              <span className="font-semibold">{formatINR(subtotal)}</span>
+              <span className="font-semibold">{formatINR(cartSubtotal)}</span>
             </span>
           </Link>
         </div>

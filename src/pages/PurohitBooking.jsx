@@ -1,30 +1,45 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, MapPin, Languages, Sparkles, Search, RotateCcw, BadgeCheck, Camera, Award, MessageSquare, ClipboardList } from "lucide-react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { CalendarDays, MapPin, Languages, Sparkles, BadgeCheck, Camera, Award, ClipboardList, ChevronDown, Search, RotateCcw } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
-import Rating from "../components/common/Rating";
 import { ProductCardSkeleton } from "../components/common/Loader";
-import { purohits } from "../data/purohits";
+import { getPandits } from "../api/panditApi";
 import { formatINR } from "../utils/format";
 
-function fetchPurohits() {
-  return new Promise((resolve) => setTimeout(() => resolve(purohits), 500));
-}
+const LIMIT = 10;
 
 export default function PurohitBooking() {
   const [filters, setFilters] = useState({ date: "", location: "", language: "", pujaType: "" });
-  const { data, isLoading } = useQuery({ queryKey: ["purohits"], queryFn: fetchPurohits });
+  const [applied, setApplied] = useState({ date: "", location: "", language: "", pujaType: "" });
 
-  const filtered = useMemo(() => {
-    if (!data) return [];
-    return data.filter((p) => {
-      if (filters.location && !p.location.toLowerCase().includes(filters.location.toLowerCase())) return false;
-      if (filters.language && !p.languages.includes(filters.language)) return false;
-      return true;
-    });
-  }, [data, filters]);
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+    queryKey: ["pandits"],
+    queryFn: ({ pageParam = 0 }) => getPandits({ limit: LIMIT, offset: pageParam }),
+    getNextPageParam: (lastPage) => {
+      const fetched = (lastPage.offset ?? 0) + (lastPage.data?.length ?? 0);
+      return fetched < (lastPage.total ?? 0) ? fetched : undefined;
+    },
+    select: (res) => res,
+  });
+
+  const allPandits = data?.pages.flatMap((p) => p.data ?? []) ?? [];
+
+  const filtered = allPandits.filter((p) => {
+    if (applied.location && !`${p.city} ${p.area}`.toLowerCase().includes(applied.location.toLowerCase())) return false;
+    if (applied.language && !p.languages.toLowerCase().includes(applied.language.toLowerCase())) return false;
+    if (applied.pujaType && !p.specializations?.some((s) => s.name.toLowerCase().includes(applied.pujaType.toLowerCase()))) return false;
+    return true;
+  });
+
+  const allPujas = [...new Set(allPandits.flatMap((p) => p.specializations?.map((s) => s.name) ?? []))];
+
+  function handleSearch() { setApplied({ ...filters }); }
+  function handleReset() {
+    setFilters({ date: "", location: "", language: "", pujaType: "" });
+    setApplied({ date: "", location: "", language: "", pujaType: "" });
+  }
 
   return (
     <PageTransition>
@@ -42,78 +57,105 @@ export default function PurohitBooking() {
             </Link>
           </div>
 
+          {/* Filters */}
           <div className="card mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <Field icon={CalendarDays} label="Select Date" type="date" onChange={(v) => setFilters((f) => ({ ...f, date: v }))} />
-            <Field icon={MapPin} label="Enter Location" onChange={(v) => setFilters((f) => ({ ...f, location: v }))} />
-            <SelectField icon={Languages} label="Select Language" options={["Hindi", "English", "Tamil", "Telugu", "Sanskrit"]} onChange={(v) => setFilters((f) => ({ ...f, language: v }))} />
-            <SelectField icon={Sparkles} label="Select Puja" options={["Ganesh Puja", "Navratri Puja", "Vastu Puja", "Wedding Puja"]} onChange={(v) => setFilters((f) => ({ ...f, pujaType: v }))} />
+            <div>
+              <label className="label flex items-center gap-1"><CalendarDays size={13} /> Select Date</label>
+              <div className="relative">
+                <CalendarDays size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
+                <input type="date" className="input pl-9" value={filters.date} onChange={(e) => setFilters((f) => ({ ...f, date: e.target.value }))} />
+              </div>
+            </div>
+            <div>
+              <label className="label flex items-center gap-1"><MapPin size={13} /> Enter Location</label>
+              <div className="relative">
+                <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
+                <input className="input pl-9" placeholder="City or area" value={filters.location} onChange={(e) => setFilters((f) => ({ ...f, location: e.target.value }))} />
+              </div>
+            </div>
+            <div>
+              <label className="label flex items-center gap-1"><Languages size={13} /> Select Language</label>
+              <div className="relative">
+                <Languages size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
+                <select className="input pl-9" value={filters.language} onChange={(e) => setFilters((f) => ({ ...f, language: e.target.value }))}>
+                  <option value="">Select Language</option>
+                  {["Hindi", "English", "Tamil", "Telugu", "Sanskrit"].map((o) => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="label flex items-center gap-1"><Sparkles size={13} /> Select Puja</label>
+              <div className="relative">
+                <Sparkles size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
+                <select className="input pl-9" value={filters.pujaType} onChange={(e) => setFilters((f) => ({ ...f, pujaType: e.target.value }))}>
+                  <option value="">Select Puja</option>
+                  {allPujas.map((o) => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+            </div>
             <div className="flex items-end gap-2">
-              <button className="btn-primary w-full"><Search size={16} /> Search</button>
+              <button className="btn-primary w-full" onClick={handleSearch}><Search size={16} /> Search</button>
+              <button className="btn-outline px-3" onClick={handleReset} aria-label="Reset filters"><RotateCcw size={16} /></button>
             </div>
           </div>
 
+          {/* List */}
           <div className="space-y-4">
             {isLoading
               ? Array.from({ length: 3 }).map((_, i) => <ProductCardSkeleton key={i} />)
               : filtered.map((p, i) => <PurohitCard key={p.id} purohit={p} index={i} />)}
 
             {!isLoading && filtered.length === 0 && (
-              <p className="py-12 text-center text-ink-500">No purohits match your filters. Try resetting.</p>
+              <p className="py-12 text-center text-ink-500">No purohits found. Try different filters.</p>
             )}
           </div>
+
+          {/* Load more */}
+          {hasNextPage && (
+            <div className="mt-8 text-center">
+              <button
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                className="btn-outline"
+              >
+                <ChevronDown size={16} />
+                {isFetchingNextPage ? "Loading..." : "Load More"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </PageTransition>
   );
 }
 
-function Field({ icon: Icon, label, type = "text", onChange }) {
+function PurohitCard({ purohit }) {
+  const startingPrice = purohit.specializations?.[0]?.price ?? null;
   return (
-    <div>
-      <label className="label">{label}</label>
-      <div className="relative">
-        <Icon size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
-        <input type={type} onChange={(e) => onChange(e.target.value)} className="input pl-9" placeholder={label} />
-      </div>
-    </div>
-  );
-}
-
-function SelectField({ icon: Icon, label, options, onChange }) {
-  return (
-    <div>
-      <label className="label">{label}</label>
-      <div className="relative">
-        <Icon size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
-        <select onChange={(e) => onChange(e.target.value)} className="input pl-9" defaultValue="">
-          <option value="">{label}</option>
-          {options.map((o) => <option key={o} value={o}>{o}</option>)}
-        </select>
-      </div>
-    </div>
-  );
-}
-
-function PurohitCard({ purohit, index }) {
-  return (
-    <div className="card flex flex-col gap-4 sm:flex-row sm:items-center" style={{ animationDelay: `${index * 60}ms` }}>
-      <img src={purohit.image} alt={purohit.name} className="h-24 w-24 shrink-0 rounded-full object-cover" />
+    <div className="card flex flex-col gap-4 sm:flex-row sm:items-center">
+      <img src={purohit.profile_image} alt={purohit.full_name} className="h-24 w-24 shrink-0 rounded-full object-cover" />
       <div className="flex-1">
-        <p className="flex items-center gap-1.5 font-semibold">{purohit.name} <BadgeCheck size={15} className="text-primary-500" /></p>
-        <p className="flex items-center gap-1 text-sm text-ink-500"><MapPin size={13} /> {purohit.location}</p>
+        <p className="flex items-center gap-1.5 font-semibold">
+          {purohit.full_name} <BadgeCheck size={15} className="text-primary-500" />
+        </p>
+        <p className="flex items-center gap-1 text-sm text-ink-500"><MapPin size={13} /> {purohit.area}, {purohit.city}</p>
         <div className="mt-2 flex flex-wrap gap-4 text-xs text-ink-500">
-          <span className="flex items-center gap-1"><Camera size={13} /> {purohit.experience}+ Years Exp.</span>
-          <span className="flex items-center gap-1"><Award size={13} /> {purohit.pujasCompleted}+ Pujas Completed</span>
-          <span className="flex items-center gap-1"><MessageSquare size={13} /> {purohit.languages.length} Languages</span>
+          <span className="flex items-center gap-1"><Camera size={13} /> {purohit.experience_years}+ Years Exp.</span>
+          <span className="flex items-center gap-1"><Award size={13} /> {purohit.specializations?.length} Specializations</span>
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
-          {purohit.languages.map((l) => <span key={l} className="badge">{l}</span>)}
+          {purohit.languages.split(",").map((l) => (
+            <span key={l} className="badge">{l.trim()}</span>
+          ))}
         </div>
       </div>
       <div className="text-right">
-        <Rating value={purohit.rating} count={purohit.reviews} />
-        <p className="mt-1 text-xs text-ink-500">Starting From</p>
-        <p className="text-lg font-bold text-primary-600">{formatINR(purohit.startingPrice)}</p>
+        {startingPrice && (
+          <>
+            <p className="text-xs text-ink-500">Starting From</p>
+            <p className="text-lg font-bold text-primary-600">{formatINR(startingPrice)}</p>
+          </>
+        )}
         <Link to={`/purohit-booking/${purohit.id}`} className="btn-outline btn-sm mt-2">View Details</Link>
       </div>
     </div>

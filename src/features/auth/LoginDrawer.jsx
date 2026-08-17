@@ -7,6 +7,7 @@ import Drawer from "../../components/common/Drawer";
 import { useAuthStore } from "../../store/authStore";
 import { showToast } from "../../components/common/Toast";
 import { sendOtp, verifyOtp } from "../../api/authApi";
+import { getProfile } from "../../api/userApi";
 
 export default function LoginDrawer({ open, onClose }) {
   const login = useAuthStore((s) => s.login);
@@ -57,6 +58,14 @@ export default function LoginDrawer({ open, onClose }) {
     try {
       const res = await verifyOtp(mobile, otpStr);
       login({ phone: `+91 ${mobile}` }, res.token);
+      // fetch real profile after login
+      try {
+        const profile = await getProfile();
+        if (profile?.data?.user) {
+          const u = profile.data.user;
+          login({ name: u.name, email: u.email, phone: u.mobile, gender: u.gender, dob: u.dob, profile_image: u.profile_image }, res.token);
+        }
+      } catch {}
       showToast.success(res.message || "Logged in successfully");
       handleClose();
     } catch (err) {

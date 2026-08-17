@@ -1,28 +1,44 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Camera, User } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
 import Button from "../components/common/Button";
 import { useAuthStore } from "../store/authStore";
 import { showToast } from "../components/common/Toast";
+import { getProfile } from "../api/userApi";
 
 export default function ProfileEdit() {
   const navigate = useNavigate();
-  const { user, updateUser } = useAuthStore();
-  const [name, setName] = useState(user?.name || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [phone, setPhone] = useState(user?.phone?.replace("+91 ", "") || "");
-  const [gender, setGender] = useState(user?.gender || "");
-  const [dob, setDob] = useState(user?.dob || "");
+  const { updateUser } = useAuthStore();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [gender, setGender] = useState("");
+  const [dob, setDob] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const { data } = useQuery({ queryKey: ["profile"], queryFn: getProfile });
+
+  useEffect(() => {
+    if (data?.data?.user) {
+      const u = data.data.user;
+      setName(u.name || "");
+      setEmail(u.email || "");
+      setPhone(u.mobile || "");
+      setGender(u.gender || "");
+      setDob(u.dob || "");
+      updateUser({ name: u.name, email: u.email, phone: u.mobile, gender: u.gender, dob: u.dob, profile_image: u.profile_image });
+    }
+  }, [data, updateUser]);
 
   function handleSubmit(e) {
     e.preventDefault();
     setSaving(true);
     setTimeout(() => {
       setSaving(false);
-      updateUser({ name, email, phone: `+91 ${phone}`, gender, dob });
+      updateUser({ name, email, phone, gender, dob });
       showToast.success("Profile updated successfully");
       navigate(-1);
     }, 700);
@@ -37,8 +53,10 @@ export default function ProfileEdit() {
             <h1 className="mb-5 text-xl font-bold">Edit Profile</h1>
 
             <div className="mb-6 flex flex-col items-center gap-2">
-              <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 text-primary-600">
-                <User size={28} />
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 text-primary-600 overflow-hidden">
+                {data?.data?.user?.profile_image
+                  ? <img src={data.data.user.profile_image} alt="profile" className="h-full w-full object-cover" />
+                  : <User size={28} />}
                 <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary-500 text-white">
                   <Camera size={13} />
                 </span>
