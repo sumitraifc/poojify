@@ -1,13 +1,38 @@
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Heart } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
 import EmptyState from "../components/common/EmptyState";
 import ProductCard from "../components/common/ProductCard";
 import { useWishlistStore } from "../store/wishlistStore";
+import { useAuthStore } from "../store/authStore";
+import { getWishlist } from "../api/wishlistApi";
 
 export default function Wishlist() {
-  const items = useWishlistStore((s) => s.items);
+  const { items, setItems } = useWishlistStore();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  const { data } = useQuery({
+    queryKey: ["wishlist"],
+    queryFn: getWishlist,
+    enabled: isAuthenticated,
+  });
+
+  useEffect(() => {
+    if (data?.items) {
+      // normalize API response to match ProductCard shape
+      const normalized = data.items.map((p) => ({
+        id: p.item_id ?? p.id,
+        name: p.name,
+        price: p.discount_price ?? p.price,
+        mrp: p.price,
+        image: p.image,
+        type: p.type || "product",
+      }));
+      setItems(normalized);
+    }
+  }, [data, setItems]);
 
   return (
     <PageTransition>

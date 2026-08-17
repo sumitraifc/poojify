@@ -32,7 +32,7 @@ export default function PopularProducts({ data }) {
         <SectionHeader title={title} viewAllLink="/shop" />
         <div className={viewType === "grid" ? gridClass : listClass}>
           {normalized.map((p, i) => (
-            <div key={p.id} className={viewType === "list" ? "w-40 shrink-0" : ""}>
+            <div key={p.id} className={viewType === "list" ? "w-48 shrink-0" : ""}>
               <ProductCard product={p} index={i} />
             </div>
           ))}

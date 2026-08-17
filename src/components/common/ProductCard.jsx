@@ -44,7 +44,7 @@ export default function ProductCard({ product, index = 0 }) {
         </Link>
 
         <button
-          onClick={() => toggle(product)}
+          onClick={() => toggle(product, product.type || "product")}
           className="absolute right-2.5 top-2.5 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 shadow-card backdrop-blur"
           aria-label="Toggle wishlist"
         >
@@ -52,7 +52,7 @@ export default function ProductCard({ product, index = 0 }) {
         </button>
 
         {/* Floating add / quantity control — overlaps the bottom-right image corner */}
-        <div className="absolute -bottom-5 right-3">
+        <div className="absolute -bottom-3 right-3">
           <AnimatePresence mode="wait" initial={false}>
             {qty === 0 ? (
               <motion.button

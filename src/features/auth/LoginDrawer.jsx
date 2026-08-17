@@ -6,12 +6,13 @@ import Button from "../../components/common/Button";
 import Drawer from "../../components/common/Drawer";
 import { useAuthStore } from "../../store/authStore";
 import { showToast } from "../../components/common/Toast";
+import { sendOtp, verifyOtp } from "../../api/authApi";
 
 export default function LoginDrawer({ open, onClose }) {
   const login = useAuthStore((s) => s.login);
   const [step, setStep] = useState("mobile");
   const [mobile, setMobile] = useState("");
-  const [otp, setOtp] = useState(new Array(6).fill(""));
+  const [otp, setOtp] = useState(new Array(4).fill(""));
   const [loading, setLoading] = useState(false);
   const inputsRef = useRef([]);
 
@@ -26,15 +27,19 @@ export default function LoginDrawer({ open, onClose }) {
     onClose();
   }
 
-  function handleSendOtp(e) {
+  async function handleSendOtp(e) {
     e.preventDefault();
     if (mobile.length !== 10) return showToast.error("Enter a valid 10-digit mobile number");
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const res = await sendOtp(mobile);
+      showToast.success(res.message || "OTP sent successfully");
       setStep("otp");
-      showToast.success("OTP sent successfully");
-    }, 700);
+    } catch (err) {
+      showToast.error(err.message || "Failed to send OTP");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleOtpChange(value, idx) {
@@ -42,17 +47,23 @@ export default function LoginDrawer({ open, onClose }) {
     const next = [...otp];
     next[idx] = value;
     setOtp(next);
-    if (value && idx < 5) inputsRef.current[idx + 1]?.focus();
+    if (value && idx < 3) inputsRef.current[idx + 1]?.focus();
   }
 
-  function handleVerify() {
+  async function handleVerify() {
+    const otpStr = otp.join("");
+    if (otpStr.length !== 4) return showToast.error("Enter complete 4-digit OTP");
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      login({ name: "Priya Sharma", phone: `+91 ${mobile}` }, "demo-jwt-token");
-      showToast.success("Logged in successfully");
+    try {
+      const res = await verifyOtp(mobile, otpStr);
+      login({ phone: `+91 ${mobile}` }, res.token);
+      showToast.success(res.message || "Logged in successfully");
       handleClose();
-    }, 700);
+    } catch (err) {
+      showToast.error(err.message || "Invalid OTP");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -70,7 +81,7 @@ export default function LoginDrawer({ open, onClose }) {
               <motion.div key="o" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mt-4">
                 <h1 className="text-lg font-bold">Verify Your Mobile Number</h1>
                 <p className="mt-1 text-sm text-ink-500">
-                  Enter the 6-digit OTP sent to <span className="font-semibold text-ink-900">+91 {mobile}</span>
+                  Enter the 4-digit OTP sent to <span className="font-semibold text-ink-900">+91 {mobile}</span>
                 </p>
               </motion.div>
             )}
