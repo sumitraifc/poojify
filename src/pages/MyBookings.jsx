@@ -1,19 +1,57 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { CalendarDays, MapPin, Eye, CalendarX, ShieldCheck, KeyRound } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Filter, CalendarDays, MapPin, Eye } from "lucide-react";
+import { motion } from "framer-motion";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
+import Button from "../components/common/Button";
 import EmptyState from "../components/common/EmptyState";
-import { bookings, bookingStatusStyle } from "../data/bookings";
-import { formatINR } from "../utils/format";
-import { CalendarX } from "lucide-react";
+import { PageLoader } from "../components/common/Loader";
+import { getBookingHistory, verifyBooking } from "../api/panditApi";
+import { formatINR, formatDate } from "../utils/format";
+import { showToast } from "../components/common/Toast";
 
-const PER_PAGE = 5;
+const STATUS_MAP = {
+  0: { label: "Pending",   cls: "badge bg-yellow-100 text-yellow-700" },
+  1: { label: "Confirmed", cls: "badge bg-blue-100 text-blue-700" },
+  2: { label: "Completed", cls: "badge bg-green-100 text-green-700" },
+  3: { label: "Cancelled", cls: "badge bg-red-100 text-red-700" },
+};
+
+function StatusBadge({ status }) {
+  const s = STATUS_MAP[status] ?? { label: "Unknown", cls: "badge" };
+  return <span className={s.cls}>{s.label}</span>;
+}
 
 export default function MyBookings() {
-  const [page, setPage] = useState(1);
-  const totalPages = Math.ceil(bookings.length / PER_PAGE) || 1;
-  const visible = bookings.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const qc = useQueryClient();
+  const [verifyBookingId, setVerifyBookingId] = useState(null);
+  const [pin, setPin] = useState("");
+
+  const { data: bookings = [], isLoading } = useQuery({
+    queryKey: ["pandit-booking-history"],
+    queryFn: getBookingHistory,
+    select: (res) => res?.data ?? [],
+  });
+
+  const { mutate: verify, isPending: verifying } = useMutation({
+    mutationFn: () => verifyBooking(verifyBookingId, pin),
+    onSuccess: (res) => {
+      showToast.success(res?.message || "Booking verified!");
+      qc.invalidateQueries({ queryKey: ["pandit-booking-history"] });
+      setVerifyBookingId(null);
+      setPin("");
+    },
+    onError: (err) => showToast.error(err?.message || "Invalid PIN. Please try again."),
+  });
+
+  function openVerify(id) {
+    setPin("");
+    setVerifyBookingId(id);
+  }
+
+  if (isLoading) return <PageLoader />;
 
   return (
     <PageTransition>
@@ -21,57 +59,73 @@ export default function MyBookings() {
         <div className="section">
           <Breadcrumb items={[{ label: "Home", to: "/" }, { label: "Purohit Ji Booking", to: "/purohit-booking" }, { label: "My Bookings" }]} />
 
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold">My Bookings</h1>
-              <p className="text-sm text-ink-500">List of all your purohit ji bookings.</p>
-            </div>
-            <div className="flex gap-2">
-              <button className="btn-outline btn-sm"><Filter size={14} /> Filter</button>
-              <button className="btn-outline btn-sm"><CalendarDays size={14} /> Select Date</button>
-            </div>
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold">My Bookings</h1>
+            <p className="text-sm text-ink-500">List of all your purohit ji bookings.</p>
           </div>
 
           {bookings.length === 0 ? (
             <EmptyState icon={CalendarX} title="No bookings yet" subtitle="Book a Purohit Ji for your next puja." actionLabel="Book Now" />
           ) : (
             <>
+              {/* Desktop table */}
               <div className="hidden overflow-hidden rounded-xl border border-ink-500/10 lg:block">
                 <table className="w-full text-sm">
                   <thead className="bg-cream-100 text-left text-xs text-ink-500">
                     <tr>
-                      <th className="p-4">Purohit Ji Details</th>
-                      <th className="p-4">Puja Details</th>
-                      <th className="p-4">Booking Date & Time</th>
+                      <th className="p-4">Pandit Ji</th>
+                      <th className="p-4">Poojas</th>
+                      <th className="p-4">Booking Date</th>
                       <th className="p-4">Amount</th>
+                      <th className="p-4">PIN</th>
+                      <th className="p-4">Payment</th>
                       <th className="p-4">Status</th>
                       <th className="p-4">Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {visible.map((b) => (
+                    {bookings.map((b) => (
                       <tr key={b.id} className="border-t border-ink-500/10">
                         <td className="p-4">
                           <div className="flex items-center gap-3">
-                            <img src={b.image} alt={b.purohit} className="h-11 w-11 rounded-full object-cover" />
+                            {b.pandit?.profile_image && (
+                              <img src={b.pandit.profile_image} alt={b.pandit.name} className="h-11 w-11 rounded-full object-cover" />
+                            )}
                             <div>
-                              <p className="font-medium">{b.purohit}</p>
-                              <p className="flex items-center gap-1 text-xs text-ink-500"><MapPin size={11} /> {b.location}</p>
+                              <p className="font-medium">{b.pandit?.name ?? "—"}</p>
+                              <p className="text-xs text-ink-500">{b.pandit?.experience} yrs exp</p>
                             </div>
                           </div>
                         </td>
                         <td className="p-4">
-                          <p className="font-medium">{b.puja}</p>
-                          <p className="text-xs text-ink-500">{b.pujaFor}</p>
+                          {b.poojas?.map((p) => (
+                            <p key={p.id} className="text-xs">✦ {p.pooja_name}</p>
+                          ))}
                         </td>
                         <td className="p-4">
-                          <p>{b.date}</p>
-                          <p className="text-xs text-ink-500">{b.time}</p>
+                          <p className="flex items-center gap-1">
+                            <CalendarDays size={13} className="text-primary-500" />
+                            {formatDate(b.booking_date)}
+                          </p>
                         </td>
-                        <td className="p-4 font-semibold text-primary-600">{formatINR(b.amount)}</td>
-                        <td className="p-4"><span className={bookingStatusStyle[b.status]}>{b.status}</span></td>
+                        <td className="p-4 font-semibold text-primary-600">{formatINR(b.total_amount)}</td>
                         <td className="p-4">
-                          <Link to={`/my-bookings/${b.id}`} className="btn-outline btn-sm"><Eye size={13} /> View</Link>
+                          <span className="rounded-lg bg-primary-50 px-3 py-1 text-sm font-bold tracking-widest text-primary-600">{b.booking_pin ?? "—"}</span>
+                        </td>
+                        <td className="p-4 capitalize">
+                          <p>{b.payment?.type ?? b.payment_type}</p>
+                          <p className="text-xs text-ink-500 capitalize">{b.payment?.status ?? b.payment_status}</p>
+                        </td>
+                        <td className="p-4"><StatusBadge status={b.status} /></td>
+                        <td className="p-4">
+                          <div className="flex flex-col gap-1.5">
+                            <Link to={`/my-bookings/${b.id}`} className="btn-outline btn-sm"><Eye size={13} /> View</Link>
+                            {b.status_text === "completed" && b.is_verified === 0 && (
+                              <button onClick={() => openVerify(b.id)} className="btn-sm flex items-center gap-1 rounded-lg border border-success/30 bg-success/10 px-3 text-xs font-semibold text-success hover:bg-success/20 transition">
+                                <KeyRound size={12} /> Verify
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -81,48 +135,82 @@ export default function MyBookings() {
 
               {/* Mobile cards */}
               <div className="space-y-4 lg:hidden">
-                {visible.map((b) => (
+                {bookings.map((b) => (
                   <div key={b.id} className="card">
                     <div className="mb-3 flex items-center gap-3">
-                      <img src={b.image} alt={b.purohit} className="h-12 w-12 rounded-full object-cover" />
+                      {b.pandit?.profile_image && (
+                        <img src={b.pandit.profile_image} alt={b.pandit.name} className="h-12 w-12 rounded-full object-cover" />
+                      )}
                       <div className="flex-1">
-                        <p className="font-medium">{b.purohit}</p>
-                        <p className="text-xs text-ink-500">{b.location}</p>
+                        <p className="font-medium">{b.pandit?.name ?? "—"}</p>
+                        <p className="flex items-center gap-1 text-xs text-ink-500">
+                          <MapPin size={11} /> {b.address?.city}, {b.address?.state}
+                        </p>
                       </div>
-                      <span className={bookingStatusStyle[b.status]}>{b.status}</span>
+                      <StatusBadge status={b.status} />
+                    </div>
+                    <div className="mb-2 space-y-0.5">
+                      {b.poojas?.map((p) => (
+                        <p key={p.id} className="text-xs text-ink-600">✦ {p.pooja_name}</p>
+                      ))}
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <div>
-                        <p className="font-medium">{b.puja}</p>
-                        <p className="text-xs text-ink-500">{b.date} · {b.time}</p>
-                      </div>
-                      <p className="font-semibold text-primary-600">{formatINR(b.amount)}</p>
+                      <p className="flex items-center gap-1 text-xs text-ink-500">
+                        <CalendarDays size={12} /> {formatDate(b.booking_date)}
+                      </p>
+                      <p className="font-semibold text-primary-600">{formatINR(b.total_amount)}</p>
                     </div>
-                    <Link to={`/my-bookings/${b.id}`} className="btn-outline btn-sm mt-3 w-full">View Details</Link>
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-xs text-ink-500">Booking PIN:</span>
+                      <span className="rounded-lg bg-primary-50 px-3 py-1 text-sm font-bold tracking-widest text-primary-600">{b.booking_pin ?? "—"}</span>
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <Link to={`/my-bookings/${b.id}`} className="btn-outline btn-sm flex-1">View Details</Link>
+                      {b.status_text === "completed" && b.is_verified === 0 && (
+                        <button onClick={() => openVerify(b.id)} className="flex items-center gap-1 rounded-lg border border-success/30 bg-success/10 px-3 text-xs font-semibold text-success hover:bg-success/20 transition">
+                          <KeyRound size={12} /> Verify
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
-              </div>
-
-              <div className="mt-6 flex items-center justify-between">
-                <p className="text-sm text-ink-500">
-                  Showing {(page - 1) * PER_PAGE + 1} to {Math.min(page * PER_PAGE, bookings.length)} of {bookings.length} bookings
-                </p>
-                <div className="flex gap-1">
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setPage(i + 1)}
-                      className={`h-8 w-8 rounded-lg text-sm font-medium ${page === i + 1 ? "bg-primary-500 text-white" : "border border-ink-500/15 hover:bg-cream-100"}`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                </div>
               </div>
             </>
           )}
         </div>
       </div>
+
+      {/* Verify PIN Modal */}
+      {verifyBookingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="card w-full max-w-sm"
+          >
+            <div className="mb-4 flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-50 text-primary-500">
+                <ShieldCheck size={20} />
+              </span>
+              <div>
+                <h2 className="font-bold">Verify Booking</h2>
+                <p className="text-xs text-ink-500">Enter the PIN shared by Pandit Ji</p>
+              </div>
+            </div>
+            <input
+              type="number"
+              className="input mb-4 text-center text-xl tracking-widest"
+              placeholder="Enter PIN"
+              value={pin}
+              onChange={(e) => setPin(e.target.value.slice(0, 6))}
+            />
+            <div className="flex gap-3">
+              <Button variant="outline" fullWidth onClick={() => { setVerifyBookingId(null); setPin(""); }}>Cancel</Button>
+              <Button fullWidth loading={verifying} disabled={pin.length < 4} onClick={() => verify()}>Verify</Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </PageTransition>
   );
 }

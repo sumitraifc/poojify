@@ -24,6 +24,9 @@ axiosClient.interceptors.response.use(
 
     if (error?.response?.status === 401) {
       useAuthStore.getState().logout();
+      toast.error("Please login to continue");
+      // dispatch custom event so LoginDrawer can open
+      window.dispatchEvent(new CustomEvent("poojify:require-login"));
     }
 
     // Let the caller decide whether to also toast; but show network-level failures globally

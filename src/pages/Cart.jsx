@@ -10,6 +10,7 @@ import Button from "../components/common/Button";
 import QuantityStepper from "../components/common/QuantityStepper";
 import { PageLoader } from "../components/common/Loader";
 import { useCartStore } from "../store/cartStore";
+import { useAuthStore } from "../store/authStore";
 import { getCartList, updateCart, clearCartApi, getCouponList } from "../api/cartApi";
 import { formatINR } from "../utils/format";
 import { showToast } from "../components/common/Toast";
@@ -24,6 +25,7 @@ const perks = [
 export default function Cart() {
   const navigate = useNavigate();
   const { removeItem, updateQty } = useCartStore();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const queryClient = useQueryClient();
   const [couponInput, setCouponInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -253,7 +255,13 @@ export default function Cart() {
                   <span className="font-semibold">Grand Total</span>
                   <span className="text-lg font-bold text-primary-600">{formatINR(grandTotal)}</span>
                 </div>
-                <Button fullWidth className="mt-4" onClick={() => navigate("/checkout")}>
+                <Button fullWidth className="mt-4" onClick={() => {
+                  if (!isAuthenticated) {
+                    window.dispatchEvent(new CustomEvent("poojify:require-login"));
+                    return;
+                  }
+                  navigate("/checkout");
+                }}>
                   <Lock size={15} /> Proceed to Checkout
                 </Button>
                 <p className="mt-2 flex items-center justify-center gap-1 text-xs text-success">

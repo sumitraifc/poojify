@@ -1,54 +1,185 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { CalendarDays, MapPin, Pencil, Wallet, ShieldCheck } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { CalendarDays, MapPin, Wallet, ShieldCheck, CheckCircle2, XCircle, Loader2, CreditCard, Banknote, Plus, Home, Briefcase, Tag } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
 import Button from "../components/common/Button";
-import { getPurohitById } from "../data/purohits";
 import { formatINR, formatDate } from "../utils/format";
 import { showToast } from "../components/common/Toast";
+import { checkAvailability, bookPandit, initiatePaytmBooking } from "../api/panditApi";
+import { getGstPaymode } from "../api/cartApi";
+import { getAddressList } from "../api/userApi";
+import { openPaytmCheckout } from "../utils/paytmHelper";
+
+const TYPE_ICON = { home: Home, work: Briefcase, other: Tag };
 
 export default function BookingConfirm() {
   const { id } = useParams();
   const { state } = useLocation();
   const navigate = useNavigate();
+
   const [agreed, setAgreed] = useState(true);
   const [confirming, setConfirming] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [paymentType, setPaymentType] = useState(null);
 
-  const purohit = getPurohitById(id);
   const date = state?.date || new Date().toISOString().slice(0, 10);
   const selected = state?.selected || [];
-  const selectedOptions = purohit?.pujaOptions.filter((o) => selected.includes(o.id)) || [];
-  const itemsTotal = selectedOptions.reduce((sum, o) => sum + o.price, 0);
-  const sevaCharge = 199;
-  const platformFee = Math.round(itemsTotal * 0.007 * 100) / 100 || 96.82;
-  const grandTotal = itemsTotal + sevaCharge + platformFee;
+  const purohit = state?.purohit || null;
+  const specializations = state?.specializations || [];
 
-  function handleConfirm() {
-    if (!agreed) return showToast.error("Please accept Terms & Conditions");
-    setConfirming(true);
-    setTimeout(() => {
-      setConfirming(false);
-      navigate(`/purohit-booking/${id}/success`, {
-        state: { bookingId: `PJ${Math.floor(100000000 + Math.random() * 899999999)}`, date, selectedOptions, grandTotal, purohit },
+  const selectedOptions = specializations.filter((o) => selected.includes(o.id));
+  const itemsTotal = selectedOptions.reduce((sum, o) => sum + Number(o.price), 0);
+
+  // Fetch GST & payment config
+  const { data: gstData } = useQuery({
+    queryKey: ["gst-paymode"],
+    queryFn: getGstPaymode,
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const gstConfig = gstData?.data ?? {};
+  const gstPct = gstConfig.gst_percentage ?? 0;
+  const paymentMethods = gstConfig.payment_methods ?? [];
+  const deliveryCharge = gstConfig.charges?.find((c) => c.name === "DELIVERY_CHARGE")?.value ?? 0;
+  const gstAmount = Math.round(itemsTotal * gstPct) / 100;
+  const grandTotal = itemsTotal + gstAmount + deliveryCharge;
+
+  // Set default payment method from API
+  useEffect(() => {
+    if (paymentMethods.length > 0 && !paymentType) {
+      setPaymentType(paymentMethods[0].name.toLowerCase());
+    }
+  }, [paymentMethods.length]);
+
+  // Fetch addresses
+  const { data: addressData, isLoading: addressLoading } = useQuery({
+    queryKey: ["address-list"],
+    queryFn: getAddressList,
+  });
+
+  const addresses = (() => {
+    const d = addressData?.data;
+    if (!d) return [];
+    return Array.isArray(d) ? d : d.addresses || [];
+  })();
+
+  // Auto-select first address
+  useEffect(() => {
+    if (addresses.length > 0 && !selectedAddressId) {
+      setSelectedAddressId(addresses[0].id);
+    }
+  }, [addresses]);
+
+  // If no addresses after loading, redirect to manage address
+  useEffect(() => {
+    if (!addressLoading && addresses.length === 0) {
+      showToast.error("Please add a delivery address first");
+      navigate("/profile/address", {
+        state: {
+          redirectTo: `/purohit-booking/${id}/confirm`,
+          bookingState: state,
+        },
       });
-    }, 900);
-  }
+    }
+  }, [addressLoading, addresses.length]);
 
-  if (!purohit) return <p className="section-y section text-center">Purohit not found.</p>;
+  const { data: availData, isLoading: checking } = useQuery({
+    queryKey: ["check-availability", id, date],
+    queryFn: () => checkAvailability(Number(id), date),
+    enabled: !!id && !!date,
+    staleTime: 1000 * 60 * 5,
+    retry: false,
+  });
+
+  const availability = availData?.available ?? null;
+
+  async function handleConfirm() {
+    if (!agreed) return showToast.error("Please accept Terms & Conditions");
+    if (!availability) return showToast.error("Pandit is not available on selected date");
+    if (!selectedAddressId) return showToast.error("Please select a delivery address");
+
+    setConfirming(true);
+    try {
+      const res = await bookPandit({
+        pandit_id: Number(id),
+        booking_date: date,
+        address_id: selectedAddressId,
+        pooja_ids: JSON.stringify(selected),
+        payment_type: paymentType,
+      });
+
+      const bookingId = res?.data?.booking_id ?? res?.booking_id;
+      const totalAmount = res?.data?.total_amount ?? grandTotal;
+
+      if (paymentType === "online" && bookingId) {
+        try {
+          const txnRes = await initiatePaytmBooking(bookingId);
+          const txnToken = txnRes?.data?.txnToken ?? txnRes?.txnToken;
+          openPaytmCheckout({
+            orderId: bookingId,
+            txnToken,
+            amount: totalAmount,
+            onSuccess: () => {
+              showToast.success("Payment successful!");
+              setConfirming(false);
+              navigate(`/purohit-booking/${id}/success`, {
+                state: { bookingId, date, selectedOptions, grandTotal: totalAmount, purohit },
+              });
+            },
+            onFailure: (msg) => {
+              showToast.error(msg || "Payment failed");
+              setConfirming(false);
+            },
+          });
+        } catch {
+          showToast.error("Failed to initiate payment");
+          setConfirming(false);
+        }
+      } else {
+        navigate(`/purohit-booking/${id}/success`, {
+          state: { bookingId, date, selectedOptions, grandTotal: totalAmount, purohit },
+        });
+      }
+    } catch (err) {
+      showToast.error(err?.message || "Booking failed. Please try again.");
+      setConfirming(false);
+    }
+  }
 
   return (
     <PageTransition>
       <div className="section-y">
         <div className="section">
-          <Breadcrumb items={[{ label: "Home", to: "/" }, { label: "Purohit Ji Booking", to: "/purohit-booking" }, { label: "Booking", to: `/purohit-booking/${id}` }, { label: "Confirm Booking" }]} />
+          <Breadcrumb items={[{ label: "Home", to: "/" }, { label: "Purohit Ji Booking", to: "/purohit-booking" }, { label: "Confirm Booking" }]} />
 
-          <div className="card mb-6 flex items-center gap-4">
-            <img src={purohit.image} alt={purohit.name} className="h-20 w-20 rounded-full object-cover" />
-            <div>
-              <h1 className="font-bold">{purohit.name}</h1>
-              <p className="flex items-center gap-1 text-sm text-ink-500"><MapPin size={13} /> {purohit.tradition}, {purohit.location}</p>
+          {/* Purohit info */}
+          {purohit && (
+            <div className="card mb-6 flex items-center gap-4">
+              <img src={purohit.profile_image} alt={purohit.full_name} className="h-20 w-20 rounded-full object-cover" />
+              <div>
+                <h1 className="font-bold">{purohit.full_name}</h1>
+                <p className="flex items-center gap-1 text-sm text-ink-500"><MapPin size={13} /> {purohit.area}, {purohit.city}</p>
+              </div>
             </div>
+          )}
+
+          {/* Availability badge */}
+          <div className="mb-6">
+            {checking ? (
+              <div className="flex items-center gap-2 rounded-xl border border-ink-500/10 bg-cream-100 px-4 py-3 text-sm text-ink-500">
+                <Loader2 size={16} className="animate-spin text-primary-500" /> Checking availability...
+              </div>
+            ) : availability === true ? (
+              <div className="flex items-center gap-2 rounded-xl border border-success/20 bg-success/10 px-4 py-3 text-sm font-medium text-success">
+                <CheckCircle2 size={16} /> Pandit is available on {formatDate(date, { day: "numeric", month: "short", year: "numeric" })}
+              </div>
+            ) : availability === false ? (
+              <div className="flex items-center gap-2 rounded-xl border border-danger/20 bg-danger/10 px-4 py-3 text-sm font-medium text-danger">
+                <XCircle size={16} /> Pandit is not available on this date. Please go back and select another date.
+              </div>
+            ) : null}
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
@@ -58,32 +189,100 @@ export default function BookingConfirm() {
               </SectionCard>
 
               <SectionCard title="Selected Pooja">
-                <div className="space-y-2">
-                  {selectedOptions.map((o) => (
-                    <div key={o.id} className="flex justify-between text-sm">
-                      <span>✦ {o.name}</span>
-                      <span className="font-medium">{formatINR(o.price)}</span>
-                    </div>
-                  ))}
-                </div>
+                {selectedOptions.length === 0 ? (
+                  <p className="text-sm text-ink-500">No pooja selected</p>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedOptions.map((o) => (
+                      <div key={o.id} className="flex justify-between text-sm">
+                        <span>✦ {o.name}</span>
+                        <span className="font-medium">{formatINR(o.price)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </SectionCard>
 
-              <SectionCard title="Purohit Visit Address" icon={MapPin}>
-                <p className="text-sm font-medium">Home</p>
-                <p className="text-sm text-ink-500">123, Shanti Nagar, Indiranagar, Lucknow, Uttar Pradesh - 226016</p>
+              {/* Address Selection */}
+              <SectionCard title="Delivery Address" icon={MapPin}>
+                {addressLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-ink-500">
+                    <Loader2 size={14} className="animate-spin text-primary-500" /> Loading addresses...
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {addresses.map((addr) => {
+                      const Icon = TYPE_ICON[addr.address_type] || MapPin;
+                      return (
+                        <label
+                          key={addr.id}
+                          className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${
+                            selectedAddressId === addr.id
+                              ? "border-primary-500 bg-primary-50"
+                              : "border-ink-500/15 hover:border-primary-300"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="address"
+                            className="mt-1 accent-primary-500"
+                            checked={selectedAddressId === addr.id}
+                            onChange={() => setSelectedAddressId(addr.id)}
+                          />
+                          <div className="flex-1">
+                            <p className="flex items-center gap-1.5 text-sm font-semibold capitalize">
+                              <Icon size={13} className="text-primary-500" /> {addr.address_type}
+                            </p>
+                            <p className="text-sm text-ink-600">
+                              {addr.house_no}{addr.landmark ? `, Near ${addr.landmark}` : ""}
+                            </p>
+                            <p className="text-xs text-ink-500">{addr.city}, {addr.state} {addr.pincode}</p>
+                          </div>
+                        </label>
+                      );
+                    })}
+                    <button
+                      onClick={() =>
+                        navigate("/profile/address", {
+                          state: { redirectTo: `/purohit-booking/${id}/confirm`, bookingState: state },
+                        })
+                      }
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary-300 py-3 text-sm font-semibold text-primary-600 hover:bg-primary-50 transition"
+                    >
+                      <Plus size={16} /> Add New Address
+                    </button>
+                  </div>
+                )}
               </SectionCard>
 
+              {/* Payment Method */}
               <SectionCard title="Payment Method" icon={Wallet}>
-                <p className="text-sm">Cash on Delivery — Pay in cash when purohit ji arrives</p>
+                <div className="flex gap-3">
+                  {paymentMethods.map((method) => {
+                    const val = method.name.toLowerCase();
+                    const isCod = val === "cod";
+                    return (
+                      <label key={method.id} className={`flex flex-1 cursor-pointer items-center gap-2 rounded-xl border p-3 transition ${paymentType === val ? "border-primary-500 bg-primary-50" : "border-ink-500/15 hover:border-primary-300"}`}>
+                        <input type="radio" name="payment" className="accent-primary-500" checked={paymentType === val} onChange={() => setPaymentType(val)} />
+                        {isCod ? <Banknote size={16} className="text-primary-500" /> : <CreditCard size={16} className="text-primary-500" />}
+                        <div>
+                          <p className="text-sm font-semibold">{isCod ? "Cash on Delivery" : "Online Payment"}</p>
+                          <p className="text-xs text-ink-500">{isCod ? "Pay when Pandit Ji arrives" : "UPI / Card / Net Banking"}</p>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
               </SectionCard>
             </div>
 
+            {/* Bill */}
             <div className="card h-fit">
               <h3 className="mb-4 font-semibold">Bill Details</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-ink-500">Items Total ({selectedOptions.length})</span><span>{formatINR(itemsTotal)}</span></div>
-                <div className="flex justify-between"><span className="text-ink-500">Purohit Seva Charge</span><span>{formatINR(sevaCharge)}</span></div>
-                <div className="flex justify-between"><span className="text-ink-500">Platform Fee</span><span>{formatINR(platformFee)}</span></div>
+                {deliveryCharge > 0 && <div className="flex justify-between"><span className="text-ink-500">Delivery Charge</span><span>{formatINR(deliveryCharge)}</span></div>}
+                {gstPct > 0 && <div className="flex justify-between"><span className="text-ink-500">GST ({gstPct}%)</span><span>{formatINR(gstAmount)}</span></div>}
               </div>
               <div className="mt-3 flex items-center justify-between border-t border-ink-500/10 pt-3">
                 <span className="font-semibold">Grand Total</span>
@@ -100,10 +299,13 @@ export default function BookingConfirm() {
 
               <label className="mt-4 flex items-start gap-2 text-xs text-ink-500">
                 <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 accent-primary-500" />
-                I agree to the <a className="link">Terms & Conditions</a> and <a className="link">Privacy Policy</a> of Poojify.
+                I agree to the Terms & Conditions and Privacy Policy of Poojify.
               </label>
 
-              <Button fullWidth className="mt-4" loading={confirming} onClick={handleConfirm}>🪔 Confirm Booking</Button>
+              <Button fullWidth className="mt-4" loading={confirming} onClick={handleConfirm}
+                disabled={availability === false || checking || !selectedAddressId}>
+                🪔 Confirm Booking
+              </Button>
               <button onClick={() => navigate(-1)} className="mt-2 w-full text-center text-sm text-ink-500 hover:text-primary-600">← Go Back</button>
             </div>
           </div>
@@ -116,12 +318,9 @@ export default function BookingConfirm() {
 function SectionCard({ title, icon: Icon, children }) {
   return (
     <div className="card">
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 font-semibold">
-          {Icon && <Icon size={16} className="text-primary-500" />} {title}
-        </h3>
-        <button className="flex items-center gap-1 text-xs text-primary-600"><Pencil size={12} /> Edit</button>
-      </div>
+      <h3 className="mb-2 flex items-center gap-2 font-semibold">
+        {Icon && <Icon size={16} className="text-primary-500" />} {title}
+      </h3>
       {children}
     </div>
   );

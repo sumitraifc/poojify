@@ -13,6 +13,7 @@ export default function PopularProducts({ data }) {
   const viewType = data?.view_type || "list";
 
   if (!items.length) return null;
+  // console.log("data",data);
 
   const normalized = items.map((p) => ({
     id: p.id,

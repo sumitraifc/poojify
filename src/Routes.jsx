@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import MainLayout from "./components/layout/MainLayout";
 import { PageLoader } from "./components/common/Loader";
+import PrivateRoute from "./components/common/PrivateRoute";
 
 // --- Lazy-loaded pages: each route's code is only downloaded when visited ---
 const Home = lazy(() => import("./pages/Home"));
@@ -22,6 +23,7 @@ const MyBookings = lazy(() => import("./pages/MyBookings"));
 const Wishlist = lazy(() => import("./pages/Wishlist"));
 const Language = lazy(() => import("./pages/Language"));
 const PurohitRegister = lazy(() => import("./pages/PurohitRegister"));
+const PanditDashboard = lazy(() => import("./pages/PanditDashboard"));
 const Search = lazy(() => import("./pages/Search"));
 const ProfileEdit = lazy(() => import("./pages/ProfileEdit"));
 const ManageAddress = lazy(() => import("./pages/ManageAddress"));
@@ -43,25 +45,26 @@ export default function AppRoutes() {
           <Route path="/search" element={<Search />} />
           <Route path="/shop/product/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/checkout" element={<PrivateRoute><Checkout /></PrivateRoute>} />
           <Route path="/combo-offers" element={<ComboOffersPage />} />
           <Route path="/combo-offers/:id" element={<ProductDetail />} />
 
           <Route path="/purohit-booking" element={<PurohitBooking />} />
           <Route path="/purohit-booking/:id" element={<PurohitDetail />} />
-          <Route path="/purohit-booking/:id/confirm" element={<BookingConfirm />} />
-          <Route path="/purohit-booking/:id/success" element={<BookingSuccess />} />
-          <Route path="/purohit-registration" element={<PurohitRegister />} />
-          <Route path="/my-bookings" element={<MyBookings />} />
-          <Route path="/my-bookings/:id" element={<BookingSuccess />} />
+          <Route path="/purohit-booking/:id/confirm" element={<PrivateRoute><BookingConfirm /></PrivateRoute>} />
+          <Route path="/purohit-booking/:id/success" element={<PrivateRoute><BookingSuccess /></PrivateRoute>} />
+          <Route path="/purohit-registration" element={<PrivateRoute><PurohitRegister /></PrivateRoute>} />
+          <Route path="/pandit-dashboard" element={<PrivateRoute><PanditDashboard /></PrivateRoute>} />
+          <Route path="/my-bookings" element={<PrivateRoute><MyBookings /></PrivateRoute>} />
+          <Route path="/my-bookings/:id" element={<PrivateRoute><BookingSuccess /></PrivateRoute>} />
 
-          <Route path="/orders" element={<MyOrders />} />
-          <Route path="/orders/:id" element={<OrderDetail />} />
+          <Route path="/orders" element={<PrivateRoute><MyOrders /></PrivateRoute>} />
+          <Route path="/orders/:id" element={<PrivateRoute><OrderDetail /></PrivateRoute>} />
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/language" element={<Language />} />
-          <Route path="/profile/edit" element={<ProfileEdit />} />
-          <Route path="/profile/address" element={<ManageAddress />} />
-          <Route path="/profile/feedback" element={<SendFeedback />} />
+          <Route path="/profile/edit" element={<PrivateRoute><ProfileEdit /></PrivateRoute>} />
+          <Route path="/profile/address" element={<PrivateRoute><ManageAddress /></PrivateRoute>} />
+          <Route path="/profile/feedback" element={<PrivateRoute><SendFeedback /></PrivateRoute>} />
 
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />

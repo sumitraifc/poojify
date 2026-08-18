@@ -6,22 +6,14 @@ import { useWishlistStore } from "../../store/wishlistStore";
 import { updateCart } from "../../api/cartApi";
 import { formatINR, discountPercent } from "../../utils/format";
 import { cn } from "../../utils/cn";
+import { useAuthStore } from "../../store/authStore";
 
-/**
- * Mobile-app style product card: rounded floating image, heart button
- * overlapping the top-right corner, and a floating quantity control that
- * overlaps the bottom-right corner of the image.
- *
- * Before adding: shows a single "+" button.
- * After adding: morphs into a capsule — [trash] qty [+] — matching the
- * reference screenshot, so the same floating control both adds and
- * manages quantity instead of just being a static plus icon.
- */
 export default function ProductCard({ product, index = 0 }) {
   const { toggle, isWishlisted } = useWishlistStore();
   const wishlisted = isWishlisted(product.id);
   const off = discountPercent(product.mrp, product.price);
   const queryClient = useQueryClient();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   // Read qty from cached cart-list API data
   const cartData = queryClient.getQueryData(["cart-list"]);
@@ -33,6 +25,14 @@ export default function ProductCard({ product, index = 0 }) {
     mutationFn: ({ action }) => updateCart(product.id, product.type ?? "product", action),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cart-list"] }),
   });
+
+  function handleCartAction(action) {
+    if (!isAuthenticated) {
+      window.dispatchEvent(new CustomEvent("poojify:require-login"));
+      return;
+    }
+    cartAction({ action });
+  }
 
   return (
     <motion.div
@@ -60,7 +60,7 @@ export default function ProductCard({ product, index = 0 }) {
           <Heart size={16} className={cn(wishlisted ? "fill-danger text-danger" : "text-ink-700")} />
         </button>
 
-        {/* Floating add / quantity control — overlaps the bottom-right image corner */}
+        {/* Floating add / quantity control */}
         <div className="absolute -bottom-3 right-3">
           <AnimatePresence mode="wait" initial={false}>
             {qty === 0 ? (
@@ -70,7 +70,7 @@ export default function ProductCard({ product, index = 0 }) {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.7, opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                onClick={() => cartAction({ action: 1 })}
+                onClick={() => handleCartAction(1)}
                 className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary-200 bg-white text-primary-600 shadow-cardHover transition hover:bg-primary-50"
                 aria-label="Add to cart"
               >
@@ -86,14 +86,14 @@ export default function ProductCard({ product, index = 0 }) {
                 className="flex items-center gap-2.5 rounded-2xl border border-primary-200 bg-white px-3 py-2.5 shadow-cardHover z-50"
               >
                 <button
-                  onClick={() => cartAction({ action: -1 })}
+                  onClick={() => handleCartAction(-1)}
                   aria-label="Decrease quantity"
                   className="text-danger"
                 >
                   {qty === 1 ? <Trash2 size={16} /> : <Minus size={16} />}
                 </button>
                 <span className="min-w-[1ch] text-center text-sm font-bold">{qty}</span>
-                <button onClick={() => cartAction({ action: 1 })} aria-label="Increase quantity" className="text-primary-600">
+                <button onClick={() => handleCartAction(1)} aria-label="Increase quantity" className="text-primary-600">
                   <Plus size={16} />
                 </button>
               </motion.div>

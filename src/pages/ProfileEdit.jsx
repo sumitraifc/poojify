@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Camera, User } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -7,41 +7,64 @@ import Breadcrumb from "../components/common/Breadcrumb";
 import Button from "../components/common/Button";
 import { useAuthStore } from "../store/authStore";
 import { showToast } from "../components/common/Toast";
-import { getProfile } from "../api/userApi";
+import { getProfile, updateProfile } from "../api/userApi";
 
 export default function ProfileEdit() {
   const navigate = useNavigate();
   const { updateUser } = useAuthStore();
+  const fileRef = useRef(null);
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [gender, setGender] = useState("");
   const [dob, setDob] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const { data } = useQuery({ queryKey: ["profile"], queryFn: getProfile });
 
   useEffect(() => {
-    if (data?.data?.user) {
-      const u = data.data.user;
-      setName(u.name || "");
-      setEmail(u.email || "");
-      setPhone(u.mobile || "");
-      setGender(u.gender || "");
-      setDob(u.dob || "");
-      updateUser({ name: u.name, email: u.email, phone: u.mobile, gender: u.gender, dob: u.dob, profile_image: u.profile_image });
-    }
-  }, [data, updateUser]);
+    const u = data?.data?.user ?? data?.data ?? data?.user;
+    if (!u) return;
+    setName(u.name || "");
+    setEmail(u.email || "");
+    setPhone(u.mobile || "");
+    setGender(u.gender || "");
+    setDob(u.dob || "");
+    setImagePreview(u.profile_image || null);
+    updateUser({ name: u.name, email: u.email, mobile: u.mobile, gender: u.gender, dob: u.dob, profile_image: u.profile_image });
+  }, [data]);
 
-  function handleSubmit(e) {
+  function onFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  }
+
+  async function handleSubmit(e) {
     e.preventDefault();
     setSaving(true);
-    setTimeout(() => {
+    try {
+      const fd = new FormData();
+      fd.append("name", name);
+      fd.append("email", email);
+      fd.append("mobile", phone);
+      fd.append("dob", dob);
+      fd.append("gender", gender);
+      if (imageFile) fd.append("profile_image", imageFile);
+
+      const res = await updateProfile(fd);
+      updateUser({ name, email, mobile: phone, gender, dob, profile_image: res?.data?.profile_image ?? imagePreview });
+      showToast.success(res?.message || "Profile updated successfully");
+      navigate("/");
+    } catch (err) {
+      showToast.error(err?.message || "Failed to update profile");
+    } finally {
       setSaving(false);
-      updateUser({ name, email, phone, gender, dob });
-      showToast.success("Profile updated successfully");
-      navigate(-1);
-    }, 700);
+    }
   }
 
   return (
@@ -52,16 +75,18 @@ export default function ProfileEdit() {
           <div className="card">
             <h1 className="mb-5 text-xl font-bold">Edit Profile</h1>
 
+            {/* Avatar picker */}
             <div className="mb-6 flex flex-col items-center gap-2">
-              <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 text-primary-600 overflow-hidden">
-                {data?.data?.user?.profile_image
-                  ? <img src={data.data.user.profile_image} alt="profile" className="h-full w-full object-cover" />
+              <button type="button" onClick={() => fileRef.current?.click()} className="relative flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 text-primary-600 overflow-hidden">
+                {imagePreview
+                  ? <img src={imagePreview} alt="profile" className="h-full w-full object-cover" />
                   : <User size={28} />}
                 <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary-500 text-white">
                   <Camera size={13} />
                 </span>
-              </div>
+              </button>
               <p className="text-xs text-ink-500">Tap to change photo</p>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -106,7 +131,7 @@ export default function ProfileEdit() {
               </div>
 
               <div className="flex gap-3 pt-2">
-                <Button type="button" variant="outline" fullWidth onClick={() => navigate(-1)}>Cancel</Button>
+                <Button type="button" variant="outline" fullWidth onClick={() => navigate("/")}>Cancel</Button>
                 <Button type="submit" fullWidth loading={saving}>Save Changes</Button>
               </div>
             </form>

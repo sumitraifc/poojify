@@ -36,7 +36,14 @@ export default function Contact() {
             <Breadcrumb items={[{ label: "Home", to: "/" }, { label: "Contact Us" }]} />
             <h1 className="mb-4 text-2xl font-bold">Get in Touch</h1>
 
-            {customerService.length > 0 ? (
+            {html && (
+              <div
+                className="text-sm text-ink-600 dark:text-cream-100/70 prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: html }}
+              />
+            )}
+
+            {!html && customerService.length > 0 && (
               <div className="space-y-4 text-sm">
                 {customerService.map((item) => {
                   const Icon = iconMap[item.type] ?? MapPin;
@@ -54,12 +61,7 @@ export default function Contact() {
                   );
                 })}
               </div>
-            ) : html ? (
-              <div
-                className="text-sm text-ink-600 dark:text-cream-100/70 prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: html }}
-              />
-            ) : null}
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className="card space-y-4">

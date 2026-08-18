@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation, useNavigate } from "react-router-dom";
 import { GoogleMap, useJsApiLoader, Marker, StandaloneSearchBox } from "@react-google-maps/api";
 import { LocateFixed, MapPin, Search, Plus, Home, Briefcase, Tag, Edit, Trash2 } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
@@ -23,6 +24,8 @@ function emptyForm() {
 
 export default function ManageAddress() {
   const { setCoords, setAddress } = useLocationStore();
+  const { state } = useLocation();
+  const navigate = useNavigate();
   const searchBoxRef = useRef(null);
 
   const [center, setCenter] = useState({ lat: 26.8467, lng: 80.9462 });
@@ -229,8 +232,9 @@ export default function ManageAddress() {
       showToast.success(res.message || (form.id ? "Address updated successfully" : "Address saved successfully"));
       setShowForm(false);
       setForm(emptyForm());
-      // Refresh addresses list
-      // Note: In production, you'd trigger a refetch of the profile query
+      if (state?.redirectTo) {
+        navigate(state.redirectTo, { state: state.bookingState });
+      }
     } catch (err) {
       showToast.error(err.message || "Failed to save address");
     } finally {
@@ -240,7 +244,7 @@ export default function ManageAddress() {
 
   const set = (key) => (e) => {
     const newValue = e.target.value;
-    console.log(`Updating ${key}:`, newValue);
+    // console.log(`Updating ${key}:`, newValue);
     setForm((f) => ({ ...f, [key]: newValue }));
   };
 

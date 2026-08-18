@@ -20,7 +20,7 @@ export default function LoginDrawer({ open, onClose }) {
   function reset() {
     setStep("mobile");
     setMobile("");
-    setOtp(new Array(6).fill(""));
+    setOtp(new Array(4).fill(""));
   }
 
   function handleClose() {

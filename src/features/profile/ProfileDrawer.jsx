@@ -1,18 +1,30 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import {
   Pencil, Crown, Package, Heart, User, MapPin, Headset, MessageSquare,
-  Sun, Moon, Globe, Shield, FileText, RefreshCw, Info, LogOut, ChevronRight,
+  Sun, Moon, Globe, Shield, FileText, RefreshCw, Info, LogOut, ChevronRight, Clock, CheckCircle, XCircle,
 } from "lucide-react";
 import Drawer from "../../components/common/Drawer";
 import { useAuthStore } from "../../store/authStore";
 import { useThemeStore } from "../../store/themeStore";
+import { getProfile } from "../../api/userApi";
 
 export default function ProfileDrawer({ open, onClose }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
+
+  const { data: profileData } = useQuery({
+    queryKey: ["profile"],
+    queryFn: getProfile,
+    enabled: !!useAuthStore.getState().token,
+    select: (res) => res?.data ?? res,
+  });
+
+  const pandit = profileData?.pandit ?? null;
+  const approvalStatus = pandit?.approval_status;
 
   function go(to) {
     onClose();
@@ -58,15 +70,39 @@ export default function ProfileDrawer({ open, onClose }) {
           </button>
         </div>
 
-        <button
-          onClick={() => go("/purohit-registration")}
-          className="mb-5 flex w-full items-center justify-between rounded-xl bg-primary-50 px-4 py-3 text-left"
-        >
-          <span className="flex items-center gap-2 text-sm font-semibold text-primary-700">
-            <Crown size={16} /> Become a Worshipper (Purohit)
-          </span>
-          <ChevronRight size={16} className="text-primary-500" />
-        </button>
+        {/* Pandit status / become purohit */}
+        {pandit ? (
+          <div className={`mb-5 flex w-full items-center justify-between rounded-xl px-4 py-3 ${
+            approvalStatus === 1 ? "bg-success/10" : approvalStatus === 2 ? "bg-danger/10" : "bg-amber-50"
+          }`}>
+            <span className={`flex items-center gap-2 text-sm font-semibold ${
+              approvalStatus === 1 ? "text-success" : approvalStatus === 2 ? "text-danger" : "text-amber-700"
+            }`}>
+              {approvalStatus === 1 ? <CheckCircle size={16} /> : approvalStatus === 2 ? <XCircle size={16} /> : <Clock size={16} />}
+              {approvalStatus === 1 ? "Purohit Profile Active" : approvalStatus === 2 ? "Application Rejected" : "Application Under Review"}
+            </span>
+            <div className="flex items-center gap-2">
+              {approvalStatus === 0 && <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800">PENDING</span>}
+              {approvalStatus === 1 && <span className="rounded-full bg-success/20 px-2 py-0.5 text-[10px] font-bold text-success">APPROVED</span>}
+              {approvalStatus === 2 && <span className="rounded-full bg-danger/20 px-2 py-0.5 text-[10px] font-bold text-danger">REJECTED</span>}
+              {approvalStatus === 1 && (
+                <button onClick={() => go("/pandit-dashboard")} className="flex items-center gap-1 rounded-lg bg-success px-3 py-1 text-xs font-bold text-white hover:bg-success/90 transition">
+                  Dashboard <ChevronRight size={12} />
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => go("/purohit-registration")}
+            className="mb-5 flex w-full items-center justify-between rounded-xl bg-primary-50 px-4 py-3 text-left"
+          >
+            <span className="flex items-center gap-2 text-sm font-semibold text-primary-700">
+              <Crown size={16} /> Become a Worshipper (Purohit)
+            </span>
+            <ChevronRight size={16} className="text-primary-500" />
+          </button>
+        )}
 
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">My Orders</p>
         <div className="mb-5 grid grid-cols-2 gap-3">

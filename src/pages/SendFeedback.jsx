@@ -4,27 +4,43 @@ import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
 import Button from "../components/common/Button";
 import { showToast } from "../components/common/Toast";
+import { submitFeedback } from "../api/feedbackApi";
 
-const categories = ["App Experience", "Product Quality", "Delivery", "Purohit Booking", "Payments", "Other"];
+const CATEGORIES = [
+  { label: "Order Experience", value: "order_experience" },
+  { label: "Delivery", value: "delivery" },
+  { label: "Product Quality", value: "product_quality" },
+  { label: "Purohit Booking", value: "purohit_booking" },
+  { label: "Payments", value: "payments" },
+  { label: "Other", value: "other" },
+];
 
 export default function SendFeedback() {
   const [rating, setRating] = useState(0);
-  const [category, setCategory] = useState("");
+  const [selected, setSelected] = useState([]);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(e) {
+  function toggleCategory(val) {
+    setSelected((s) => s.includes(val) ? s.filter((c) => c !== val) : [...s, val]);
+  }
+
+  async function handleSubmit(e) {
     e.preventDefault();
     if (rating === 0) return showToast.error("Please select a rating");
     if (!message.trim()) return showToast.error("Please write your feedback");
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
-      showToast.success("Thank you! Your feedback has been submitted.");
+    try {
+      const res = await submitFeedback({ rating, categories: selected, message });
+      showToast.success(res?.message || "Thank you! Your feedback has been submitted.");
       setRating(0);
-      setCategory("");
+      setSelected([]);
       setMessage("");
-    }, 800);
+    } catch (err) {
+      showToast.error(err?.message || "Failed to submit feedback");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -49,11 +65,23 @@ export default function SendFeedback() {
               </div>
 
               <div>
-                <label className="label">Category</label>
-                <select value={category} onChange={(e) => setCategory(e.target.value)} className="input">
-                  <option value="">Select a category</option>
-                  {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
+                <label className="label">Categories <span className="text-xs text-ink-500">(select all that apply)</span></label>
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORIES.map(({ label, value }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => toggleCategory(value)}
+                      className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
+                        selected.includes(value)
+                          ? "border-primary-500 bg-primary-50 text-primary-600"
+                          : "border-ink-500/15 text-ink-500 hover:border-primary-300"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>

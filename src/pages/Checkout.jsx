@@ -1,19 +1,21 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { MapPin, Plus, Pencil, Trash2, Lock, Smartphone, CreditCard, Truck, ShieldCheck } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { MapPin, Plus, Home, Briefcase, Tag, Lock, Smartphone, CreditCard, Truck, ShieldCheck } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
 import Button from "../components/common/Button";
 import { PageLoader } from "../components/common/Loader";
 import { getCartList, getGstPaymode, placeOrder } from "../api/cartApi";
+import { getAddressList } from "../api/userApi";
+import { initiatePaytmOrder } from "../api/orderApi";
 import { formatINR } from "../utils/format";
 import { showToast } from "../components/common/Toast";
+import { openPaytmCheckout } from "../utils/paytmHelper";
 
-const addresses = [
-  { id: "a1", label: "Home", isDefault: true, name: "Harsh Singh", line: "123, Shree Ram Nagar, Patel Road, Jaipur, Rajasthan - 302001", phone: "+91 98765 43210" },
-  { id: "a2", label: "Work", isDefault: false, name: "Harsh Singh", line: "Plot No. 45, Malviya Nagar, Jaipur, Rajasthan - 302017", phone: "+91 91234 56789" },
-];
+import { useCartStore } from "../store/cartStore";
+
+const TYPE_ICON = { home: Home, work: Briefcase, other: Tag };
 
 const payIconMap = {
   COD: Truck,
@@ -22,16 +24,67 @@ const payIconMap = {
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const [addressId, setAddressId] = useState("a1");
+  const queryClient = useQueryClient();
+  const clearCart = useCartStore((s) => s.clearCart);
+  const [addressId, setAddressId] = useState(null);
   const [payment, setPayment] = useState(null);
 
-  const { mutate: submitOrder, isLoading: placing } = useMutation({
+  const { data: addressData, isLoading: addrLoading } = useQuery({
+    queryKey: ["address-list"],
+    queryFn: getAddressList,
+  });
+
+  const addresses = (() => {
+    const d = addressData?.data;
+    if (!d) return [];
+    return Array.isArray(d) ? d : d.addresses ?? [];
+  })();
+
+  // auto-select first address
+  if (addresses.length && !addressId) setAddressId(addresses[0].id);
+
+  const [placing, setPlacing] = useState(false);
+
+  const { mutate: submitOrder } = useMutation({
     mutationFn: (body) => placeOrder(body),
-    onSuccess: () => {
-      showToast.success("Order placed successfully!");
-      navigate("/orders");
+    onSuccess: async (res) => {
+      const orderId = res?.data?.order_id ?? res?.order_id;
+      if (payment === "ONLINE" && orderId) {
+        try {
+          const txnRes = await initiatePaytmOrder(orderId);
+          const txnToken = txnRes?.data?.txnToken ?? txnRes?.txnToken;
+          openPaytmCheckout({
+            orderId,
+            txnToken,
+            amount: grandTotal,
+            onSuccess: () => {
+              showToast.success("Payment successful!");
+              clearCart();
+              queryClient.invalidateQueries({ queryKey: ["cart-list"] });
+              setPlacing(false);
+              navigate("/orders");
+            },
+            onFailure: (msg) => {
+              showToast.error(msg || "Payment failed");
+              setPlacing(false);
+            },
+          });
+        } catch {
+          showToast.error("Failed to initiate payment");
+          setPlacing(false);
+        }
+      } else {
+        showToast.success("Order placed successfully!");
+        clearCart();
+        queryClient.invalidateQueries({ queryKey: ["cart-list"] });
+        setPlacing(false);
+        navigate("/orders");
+      }
     },
-    onError: (err) => showToast.error(err?.message ?? "Failed to place order"),
+    onError: (err) => {
+      showToast.error(err?.message ?? "Failed to place order");
+      setPlacing(false);
+    },
   });
 
   const { data: cartData, isLoading: cartLoading } = useQuery({
@@ -44,10 +97,6 @@ export default function Checkout() {
     queryKey: ["gst-paymode"],
     queryFn: getGstPaymode,
     select: (res) => res?.data,
-    onSuccess: (data) => {
-      if (data?.payment_methods?.length && !payment)
-        setPayment(data.payment_methods[0].name);
-    },
   });
 
   const items = (Array.isArray(cartData) ? cartData : []).map((i) => ({
@@ -72,6 +121,7 @@ export default function Checkout() {
   function handlePlaceOrder() {
     if (!payment) return showToast.error("Select a payment method");
     if (!addressId) return showToast.error("Select a delivery address");
+    setPlacing(true);
     submitOrder({
       coupon_id: 0,
       payment_method: payment,
@@ -79,7 +129,7 @@ export default function Checkout() {
     });
   }
 
-  if (cartLoading || configLoading) return <PageLoader />;
+  if (cartLoading || configLoading || addrLoading) return <PageLoader />;;
 
   return (
     <PageTransition>
@@ -93,36 +143,48 @@ export default function Checkout() {
               <div className="card">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="flex items-center gap-2 font-semibold"><MapPin size={17} className="text-primary-500" /> Delivery Address</h3>
-                  <button className="flex items-center gap-1 text-sm font-medium text-primary-600"><Plus size={14} /> Add New Address</button>
+                  <button
+                    onClick={() => navigate("/profile/address", { state: { redirectTo: "/checkout" } })}
+                    className="flex items-center gap-1 text-sm font-medium text-primary-600"
+                  >
+                    <Plus size={14} /> Add New Address
+                  </button>
                 </div>
+                {addresses.length === 0 ? (
+                  <div className="rounded-xl border-2 border-dashed border-primary-300 py-6 text-center">
+                    <p className="mb-2 text-sm text-ink-500">No saved addresses</p>
+                    <button
+                      onClick={() => navigate("/profile/address", { state: { redirectTo: "/checkout" } })}
+                      className="text-sm font-semibold text-primary-600"
+                    >
+                      + Add Address
+                    </button>
+                  </div>
+                ) : (
                 <div className="space-y-3">
-                  {addresses.map((addr) => (
+                  {addresses.map((addr) => {
+                    const Icon = TYPE_ICON[addr.address_type] ?? MapPin;
+                    return (
                     <label
                       key={addr.id}
                       className={`block cursor-pointer rounded-xl border p-4 transition ${
                         addressId === addr.id ? "border-primary-500 bg-primary-50" : "border-ink-500/15 hover:border-primary-300"
                       }`}
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-3">
-                          <input type="radio" name="address" className="mt-1 accent-primary-500" checked={addressId === addr.id} onChange={() => setAddressId(addr.id)} />
-                          <div>
-                            <p className="flex items-center gap-2 font-semibold">
-                              {addr.label} {addr.isDefault && <span className="badge-success">Default</span>}
-                            </p>
-                            <p className="text-sm">{addr.name}</p>
-                            <p className="text-sm text-ink-500">{addr.line}</p>
-                            <p className="text-sm text-ink-500">Phone: {addr.phone}</p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 text-ink-500">
-                          <button aria-label="Edit address"><Pencil size={14} /></button>
-                          <button aria-label="Delete address" className="text-danger"><Trash2 size={14} /></button>
+                      <div className="flex items-start gap-3">
+                        <input type="radio" name="address" className="mt-1 accent-primary-500" checked={addressId === addr.id} onChange={() => setAddressId(addr.id)} />
+                        <Icon size={14} className="mt-1 shrink-0 text-primary-500" />
+                        <div>
+                          <p className="font-semibold capitalize">{addr.address_type}</p>
+                          <p className="text-sm text-ink-600">{addr.house_no}{addr.landmark ? `, Near ${addr.landmark}` : ""}</p>
+                          <p className="text-xs text-ink-500">{addr.city}, {addr.state} {addr.pincode}</p>
                         </div>
                       </div>
                     </label>
-                  ))}
+                    );
+                  })}
                 </div>
+                )}
                 <div className="mt-4">
                   <label className="label">Delivery Instructions (Optional)</label>
                   <textarea className="input" rows={2} placeholder="E.g. Please leave the package at the door." />

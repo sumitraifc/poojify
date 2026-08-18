@@ -15,7 +15,7 @@ import { PageLoader } from "../components/common/Loader";
 
 export default function Home() {
   const { latitude, longitude } = useLocationStore();
-  const { sections, setSections } = useHomeStore();
+  const { sections, setSections, setCategories } = useHomeStore();
 
   const { data, isLoading } = useQuery({
     queryKey: ["home-sections", latitude, longitude],
@@ -27,7 +27,11 @@ export default function Home() {
   });
 
   useEffect(() => {
-    if (data?.sections) setSections(data.sections);
+    if (data?.sections) {
+      setSections(data.sections);
+      const catSection = data.sections.find((s) => s.section_type === "category");
+      if (catSection?.data?.items?.length) setCategories(catSection.data.items);
+    }
   }, [data, setSections]);
 
   if (isLoading && !sections.length) return <PageLoader />;

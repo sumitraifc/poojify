@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { BadgeCheck, MapPin, Camera, Award, Languages, Sparkles, CalendarDays, Image } from "lucide-react";
+import { useAuthStore } from "../store/authStore";
+import { BadgeCheck, MapPin, Camera, Award, Languages, Sparkles, CalendarDays, Image, FileText, Phone, Mail } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
 import Button from "../components/common/Button";
@@ -16,10 +17,12 @@ export default function PurohitDetail() {
   const [date, setDate] = useState("");
   const [selected, setSelected] = useState([]);
 
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
   const { data: purohit, isLoading } = useQuery({
     queryKey: ["pandit", id],
     queryFn: () => getPanditById(id),
-    select: (res) => res?.data ?? res,
+    select: (res) => res?.data?.data ?? res?.data ?? res,
   });
 
   const total = useMemo(() => {
@@ -34,9 +37,13 @@ export default function PurohitDetail() {
   }
 
   function handleBookNow() {
+    if (!isAuthenticated) {
+      window.dispatchEvent(new CustomEvent("poojify:require-login"));
+      return;
+    }
     if (!date) return showToast.error("Please select a date");
     if (selected.length === 0) return showToast.error("Please select at least one puja");
-    navigate(`/purohit-booking/${id}/confirm`, { state: { date, selected } });
+    navigate(`/purohit-booking/${id}/confirm`, { state: { date, selected, purohit, specializations: purohit.specializations ?? [] } });
   }
 
   if (isLoading) return <PageLoader />;
@@ -63,7 +70,7 @@ export default function PurohitDetail() {
                   <div className="mt-3 flex flex-wrap gap-5 text-sm">
                     <Stat icon={Camera} value={`${purohit.experience_years}+`} label="Years Exp." />
                     <Stat icon={Award} value={purohit.specializations?.length} label="Specializations" />
-                    <Stat icon={Languages} value={purohit.languages} label="" />
+                    <Stat icon={Languages} value={typeof purohit.languages === "string" ? purohit.languages : (purohit.languages ?? []).join(", ")} label="" />
                     <Stat icon={MapPin} value={`${purohit.service_radius} km`} label="Service Radius" />
                   </div>
                   {purohit.about && <p className="mt-3 text-sm text-ink-500">{purohit.about}</p>}
@@ -86,11 +93,46 @@ export default function PurohitDetail() {
               <div className="card">
                 <h3 className="mb-3 font-semibold">Languages Known</h3>
                 <div className="flex flex-wrap gap-2">
-                  {purohit.languages.split(",").map((l) => (
+                  {(typeof purohit.languages === "string" ? purohit.languages.split(",") : purohit.languages ?? []).map((l) => (
                     <span key={l} className="badge">{l.trim()}</span>
                   ))}
                 </div>
               </div>
+
+              {/* Contact Info */}
+              <div className="card space-y-2">
+                <h3 className="mb-3 font-semibold">Contact Info</h3>
+                <p className="flex items-center gap-2 text-sm text-ink-600"><Phone size={14} className="text-primary-500" /> {purohit.mobile}</p>
+                {purohit.email && <p className="flex items-center gap-2 text-sm text-ink-600"><Mail size={14} className="text-primary-500" /> {purohit.email}</p>}
+                {purohit.pincode && <p className="flex items-center gap-2 text-sm text-ink-600"><MapPin size={14} className="text-primary-500" /> {purohit.area}, {purohit.city} — {purohit.pincode}</p>}
+              </div>
+
+              {/* Documents */}
+              {(purohit.document_proof || purohit.work_proof || purohit.certificate) && (
+                <div className="card">
+                  <h3 className="mb-3 flex items-center gap-2 font-semibold"><FileText size={15} className="text-primary-500" /> Verification Documents</h3>
+                  <div className="flex flex-wrap gap-3">
+                    {purohit.document_proof && (
+                      <div className="space-y-1">
+                        <p className="text-xs text-ink-500">ID Proof</p>
+                        <img src={purohit.document_proof} alt="document" className="h-24 w-32 rounded-lg object-cover border border-ink-500/10" />
+                      </div>
+                    )}
+                    {purohit.work_proof && (
+                      <div className="space-y-1">
+                        <p className="text-xs text-ink-500">Work Proof</p>
+                        <img src={purohit.work_proof} alt="work proof" className="h-24 w-32 rounded-lg object-cover border border-ink-500/10" />
+                      </div>
+                    )}
+                    {purohit.certificate && (
+                      <div className="space-y-1">
+                        <p className="text-xs text-ink-500">Certificate</p>
+                        <img src={purohit.certificate} alt="certificate" className="h-24 w-32 rounded-lg object-cover border border-ink-500/10" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Booking Panel */}
@@ -100,7 +142,7 @@ export default function PurohitDetail() {
               </h3>
 
               <label className="label flex items-center gap-1.5"><CalendarDays size={14} /> Select Date</label>
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="input mb-4" />
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} min={new Date().toISOString().slice(0, 10)} className="input mb-4" />
 
               <p className="label">Select Pooja</p>
               <div className="max-h-72 space-y-2 overflow-y-auto">

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import SectionHeader from "../../components/common/SectionHeader";
 
 // list = hamesha horizontal scroll (mobile + desktop)
 // grid = hamesha grid layout
@@ -14,9 +15,9 @@ export default function CategoryGrid({ data }) {
   if (!items.length) return null;
 
   return (
-    <section className="section-y pt-0">
+    <section className="section-y">
       <div className="section">
-        <h2 className="mb-6 text-center text-xl font-bold sm:text-2xl">{title}</h2>
+        <SectionHeader title={title} viewAllLink="/shop" />
         <div className={viewType === "grid" ? gridClass : listClass}>
           {items.map((cat, i) => (
             <CategoryItem key={cat.id} cat={cat} i={i} viewType={viewType} />
