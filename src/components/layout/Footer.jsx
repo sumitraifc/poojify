@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Facebook, Instagram, Youtube, Shield, Package, RefreshCw, Headset } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Logo from "./Logo";
+import { useAuthStore } from "../../store/authStore";
 
 const shopCategories = ["Pooja Samagri", "Pooja Kits", "Flowers & Garlands", "Havan Essentials", "Agarbatti, Dhoop & Incense", "Diyas & Lighting"];
 const quickLinks = [
@@ -20,10 +21,14 @@ const customerService = [
   { label: "Contact Us", to: "/contact" },
 ];
 const myAccount = [
-  { label: "Login / Register", to: "/login" },
   { label: "My Orders", to: "/orders" },
   { label: "Wishlist", to: "/wishlist" },
   { label: "Track Order", to: "/orders" },
+  // { label: "My Bookings", to: "/my-bookings" },
+];
+
+const guestLinks = [
+  { label: "Login / Register", to: "/login" },
 ];
 
 const trustBadges = [
@@ -38,8 +43,10 @@ export default function Footer() {
 
   return (
     <footer className="mt-16 bg-white dark:bg-[#1B140F]">
-      <div className="section-y border-t border-ink-500/10 dark:border-white/10">
-        <div className="section grid grid-cols-2 gap-6 sm:grid-cols-4">
+
+      {/* Trust badges */}
+      <div className="border-t border-ink-500/10 py-8 dark:border-white/10">
+        <div className="section grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {trustBadges.map((b) => (
             <div key={b.title} className="flex items-center gap-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-500">
@@ -54,9 +61,11 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="bg-cream-100 py-12 dark:bg-[#241B14]">
-        <div className="section grid grid-cols-2 gap-8 sm:grid-cols-3 lg:grid-cols-6">
-          <div className="col-span-2 sm:col-span-3 lg:col-span-2">
+      {/* Main footer links */}
+      <div className="bg-cream-100 py-10 dark:bg-[#241B14]">
+        <div className="section grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-6">
+          {/* Brand */}
+          <div className="sm:col-span-2 lg:col-span-2">
             <Logo />
             <p className="mt-3 max-w-xs text-sm text-ink-500 dark:text-cream-100/60">{t("footer.trustedPlatform")}</p>
             <div className="mt-4 flex gap-3">
@@ -75,7 +84,10 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="bg-maroon-700 dark:bg-black/60 py-4 text-center text-xs text-white/80">{t("footer.rights")}</div>
+      {/* Bottom bar */}
+      <div className="bg-maroon-700 py-4 text-center text-xs text-white/80 dark:bg-black/60">
+        {t("footer.rights")}
+      </div>
     </footer>
   );
 }

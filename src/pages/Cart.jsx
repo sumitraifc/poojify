@@ -127,8 +127,9 @@ export default function Cart() {
           <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
             <div className="space-y-4">
               <div className="card overflow-hidden !p-0">
-                <table className="w-full text-sm">
-                  <thead className="hidden bg-cream-100 text-left text-xs text-ink-500 sm:table-header-group">
+                {/* Desktop table */}
+                <table className="hidden w-full text-sm sm:table">
+                  <thead className="bg-cream-100 text-left text-xs text-ink-500">
                     <tr>
                       <th className="p-4">Product</th>
                       <th className="p-4">Price</th>
@@ -176,6 +177,50 @@ export default function Cart() {
                     </AnimatePresence>
                   </tbody>
                 </table>
+
+                {/* Mobile card list */}
+                <div className="sm:hidden">
+                  <AnimatePresence>
+                    {items.map((item) => (
+                      <motion.div
+                        key={item.id}
+                        initial={{ opacity: 1 }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="border-b border-ink-500/10 p-3"
+                      >
+                        {/* Product name on top */}
+                        <div className="mb-2 flex items-start justify-between gap-2">
+                          <Link to={`/shop/product/${item.id}`} className="text-sm font-semibold leading-snug hover:text-primary-600">
+                            {item.name}
+                          </Link>
+                          <button onClick={() => handleRemove(item)} aria-label="Remove" className="shrink-0 text-ink-400 hover:text-danger">
+                            <X size={16} />
+                          </button>
+                        </div>
+                        {/* Image + price/qty row */}
+                        <div className="flex items-center gap-3">
+                          <img src={item.image} alt={item.name} className="h-20 w-20 shrink-0 rounded-lg object-cover" />
+                          <div className="flex flex-1 flex-col gap-2">
+                            <p className="text-xs text-ink-500">Delivery in 2-3 days</p>
+                            <div className="flex items-center gap-3">
+                              <QuantityStepper value={item.qty} onChange={(v) => handleQtyChange(item, v)} />
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-semibold text-primary-600">{formatINR(item.price)}</span>
+                                {item.mrp > item.price && <span className="text-xs text-ink-500 line-through">{formatINR(item.mrp)}</span>}
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-ink-500">Total: <span className="font-semibold text-ink-900 dark:text-cream-100">{formatINR(item.price * item.qty)}</span></span>
+                              <button onClick={() => handleRemove(item)} className="flex items-center gap-1 text-xs text-danger">
+                                <Trash2 size={12} /> Remove
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 p-4">
                   <Link to="/shop" className="flex items-center gap-1.5 text-sm font-medium text-ink-700 hover:text-primary-600">
                     <ArrowLeft size={15} /> Continue Shopping

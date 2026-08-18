@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { Search, ShoppingCart, Menu, LogIn, User, Bell, CheckCheck, TrendingUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -63,6 +63,12 @@ export default function Header() {
   const notifRef = useRef(null);
   const searchRef = useRef(null);
   const queryClient = useQueryClient();
+  const { pathname } = useLocation();
+
+  // Close mobile menu on any route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   useClickOutside(notifRef, () => setNotifOpen(false));
   useClickOutside(searchRef, () => setSearchFocused(false));
@@ -167,7 +173,7 @@ export default function Header() {
 
         <div className="ml-auto flex items-center gap-3 sm:gap-4">
           {isAuthenticated ? (
-            <button onClick={() => setProfileOpen(true)} className="flex items-center gap-2 rounded-full border border-ink-500/15 py-1.5 pl-1.5 pr-3 hover:bg-cream-200 dark:border-white/15 dark:hover:bg-white/5">
+            <button onClick={() => setProfileOpen(true)} className="hidden lg:flex items-center gap-2 rounded-full border border-ink-500/15 py-1.5 pl-1.5 pr-3 hover:bg-cream-200 dark:border-white/15 dark:hover:bg-white/5">
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-100 text-primary-600">
                 <User size={15} />
               </span>
@@ -180,7 +186,7 @@ export default function Header() {
           )}
 
           {isAuthenticated && (
-            <div ref={notifRef} className="relative">
+            <div ref={notifRef} className="relative hidden lg:block">
               <button
                 onClick={() => setNotifOpen((p) => !p)}
                 className="relative flex h-9 w-9 items-center justify-center rounded-full bg-cream-200 dark:bg-white/10"
@@ -248,26 +254,89 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile search */}
+      {/* Mobile search + user/notif icons */}
       <div className="section pb-3 lg:hidden">
-        <form onSubmit={handleSearch}>
-          <div ref={searchRef} className="relative">
-            <div className="flex overflow-hidden rounded-lg border border-ink-500/15 dark:border-white/15">
-              <input
-                value={search}
-                onChange={handleSearchChange}
-                onFocus={() => setSearchFocused(true)}
-                type="text"
-                placeholder={t("nav.search")}
-                className="w-full bg-transparent px-4 py-2 text-sm text-ink-900 outline-none placeholder:text-ink-500/50 dark:text-cream-100 dark:placeholder:text-cream-100/40"
-              />
-              <button type="submit" className="flex items-center justify-center bg-primary-500 px-4 text-white">
-                <Search size={16} />
-              </button>
+        <div className="flex items-center gap-2">
+          <form onSubmit={handleSearch} className="flex-1">
+            <div ref={searchRef} className="relative">
+              <div className="flex overflow-hidden rounded-lg border border-ink-500/15 dark:border-white/15">
+                <input
+                  value={search}
+                  onChange={handleSearchChange}
+                  onFocus={() => setSearchFocused(true)}
+                  type="text"
+                  placeholder={t("nav.search")}
+                  className="w-full bg-transparent px-4 py-2 text-sm text-ink-900 outline-none placeholder:text-ink-500/50 dark:text-cream-100 dark:placeholder:text-cream-100/40"
+                />
+                <button type="submit" className="flex items-center justify-center bg-primary-500 px-4 text-white">
+                  <Search size={16} />
+                </button>
+              </div>
+              {showDropdown && <CategoryDropdown categories={categories} onSelect={handleCategoryClick} />}
             </div>
-            {showDropdown && <CategoryDropdown categories={categories} onSelect={handleCategoryClick} />}
-          </div>
-        </form>
+          </form>
+
+          {isAuthenticated ? (
+            <button onClick={() => setProfileOpen(true)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600">
+              <User size={17} />
+            </button>
+          ) : (
+            <button onClick={() => setLoginOpen(true)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cream-200 dark:bg-white/10">
+              <LogIn size={17} />
+            </button>
+          )}
+
+          {isAuthenticated && (
+            <div ref={notifRef} className="relative shrink-0">
+              <button
+                onClick={() => setNotifOpen((p) => !p)}
+                className="relative flex h-9 w-9 items-center justify-center rounded-full bg-cream-200 dark:bg-white/10"
+                aria-label="Notifications"
+              >
+                <Bell size={17} />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+              {notifOpen && (
+                <div className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-ink-500/10 bg-white shadow-cardHover dark:bg-[#1B140F]">
+                  <div className="flex items-center justify-between border-b border-ink-500/10 px-4 py-3">
+                    <p className="font-semibold">Notifications</p>
+                    {unreadCount > 0 && (
+                      <button onClick={() => readAll()} className="flex items-center gap-1 text-xs text-primary-600 hover:underline">
+                        <CheckCheck size={13} /> Mark all read
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <p className="py-8 text-center text-sm text-ink-500">No notifications</p>
+                    ) : (
+                      notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          onClick={() => !n.is_read && readOne(n.id)}
+                          className={`cursor-pointer border-b border-ink-500/5 px-4 py-3 transition hover:bg-cream-50 dark:hover:bg-white/5 ${!n.is_read ? "bg-primary-50/60 dark:bg-primary-900/10" : ""}`}
+                        >
+                          <div className="flex items-start gap-2">
+                            {!n.is_read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary-500" />}
+                            <div className={!n.is_read ? "" : "pl-4"}>
+                              <p className="text-sm font-medium">{n.title}</p>
+                              <p className="text-xs text-ink-500">{n.message}</p>
+                              <p className="mt-1 text-[10px] text-ink-500/60">{formatTime(n.created_at)}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <nav className="hidden border-t border-ink-500/10 dark:border-white/10 lg:block">

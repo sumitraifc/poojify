@@ -1,7 +1,8 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Globe, LogIn } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useEffect } from "react";
 import Logo from "./Logo";
 import { useAuthStore } from "../../store/authStore";
 
@@ -17,6 +18,12 @@ const links = [
 export default function MobileMenu({ open, onClose, onLoginClick }) {
   const { t } = useTranslation();
   const { isAuthenticated } = useAuthStore();
+  const location = useLocation();
+
+  // Close on route change
+  useEffect(() => {
+    if (open) onClose();
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <AnimatePresence>

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { SlidersHorizontal, LayoutGrid, List } from "lucide-react";
+import { LayoutGrid, List } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
 import ProductCard from "../components/common/ProductCard";
@@ -16,14 +16,12 @@ export default function Shop() {
   const [view, setView] = useState("grid");
   const [sort, setSort] = useState("popularity");
 
-  // Categories
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: () => getCategories({ limit: 50, offset: 0 }),
     select: (res) => res?.data ?? [],
   });
 
-  // Subcategories — fetch when category selected
   const { data: subCategories = [] } = useQuery({
     queryKey: ["subcategories", activeCat],
     queryFn: () => getSubCategories(activeCat),
@@ -31,21 +29,14 @@ export default function Shop() {
     enabled: !!activeCat,
   });
 
-  // Auto-select first category
   useEffect(() => {
-    if (categories.length > 0 && !activeCat) {
-      setActiveCat(categories[0].id);
-    }
+    if (categories.length > 0 && !activeCat) setActiveCat(categories[0].id);
   }, [categories]);
 
-  // Auto-select first subcategory
   useEffect(() => {
-    if (subCategories.length > 0 && !activeSub) {
-      setActiveSub(subCategories[0].id);
-    }
+    if (subCategories.length > 0) setActiveSub(subCategories[0].id);
   }, [subCategories]);
 
-  // Products — fetch when subcategory selected
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ["products-by-sub", activeSub],
     queryFn: () => getProductsBySub(activeSub, { limit: 50, offset: 0 }),
@@ -66,14 +57,8 @@ export default function Shop() {
     setActiveSub(null);
   }
 
-  // Normalize product shape for ProductCard
   function normalize(p) {
-    return {
-      ...p,
-      image: p.image ?? p.main_image,
-      price: p.discount_price ?? p.price,
-      mrp: p.price,
-    };
+    return { ...p, image: p.image ?? p.main_image, price: p.discount_price ?? p.price, mrp: p.price };
   }
 
   return (
@@ -82,70 +67,56 @@ export default function Shop() {
         <div className="section">
           <Breadcrumb items={[{ label: "Home", to: "/" }, { label: "Shop" }]} />
 
-          <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
-            {/* Sidebar — categories */}
-            <aside className="hidden lg:block">
-              <div className="card sticky top-24">
-                <h3 className="mb-3 font-semibold">Categories</h3>
-                <ul className="space-y-1">
-                  <li>
-                    <button
-                      onClick={() => { setActiveCat(null); setActiveSub(null); }}
-                      className={cn("w-full rounded-lg px-3 py-2 text-left text-sm", !activeCat ? "bg-primary-50 font-medium text-primary-600" : "text-ink-700 hover:bg-cream-100")}
-                    >
-                      All Categories
-                    </button>
-                  </li>
-                  {categories.map((cat) => (
-                    <li key={cat.id}>
-                      <button
-                        onClick={() => selectCategory(cat.id)}
-                        className={cn("flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm", activeCat === cat.id ? "bg-primary-50 font-medium text-primary-600" : "text-ink-700 hover:bg-cream-100")}
-                      >
-                        {cat.image && <img src={cat.image} alt="" className="h-6 w-6 rounded object-cover" />}
-                        {cat.name}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-4 rounded-lg bg-primary-50 p-3 text-xs">
-                  <p className="font-semibold">Free Delivery</p>
-                  <p className="text-ink-500">On all orders above ₹499</p>
-                </div>
-              </div>
-            </aside>
+          {/* Main layout: left cat sidebar + right content */}
+          <div className="flex gap-3">
 
-            {/* Main */}
-            <div>
-              {/* Mobile category scroll */}
-              <div className="mb-4 flex gap-2 overflow-x-auto scrollbar-hide lg:hidden">
-                <button
-                  onClick={() => { setActiveCat(null); setActiveSub(null); }}
-                  className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium", !activeCat ? "border-primary-500 bg-primary-50 text-primary-600" : "border-ink-500/15 text-ink-600")}
-                >
-                  All
-                </button>
+            {/* ── Left: Category sidebar (all screens) ── */}
+            <aside className="w-16 shrink-0 sm:w-20 lg:w-52">
+              <div className="sticky top-20 max-h-[80vh] overflow-y-auto scrollbar-hide rounded-xl border border-ink-500/10 bg-cream-50 py-2">
                 {categories.map((cat) => (
                   <button
                     key={cat.id}
                     onClick={() => selectCategory(cat.id)}
-                    className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium", activeCat === cat.id ? "border-primary-500 bg-primary-50 text-primary-600" : "border-ink-500/15 text-ink-600")}
+                    className={cn(
+                      "flex w-full flex-col items-center gap-1 px-1 py-2.5 text-center transition lg:flex-row lg:gap-2 lg:px-3 lg:text-left",
+                      activeCat === cat.id
+                        ? "bg-primary-50 text-primary-600"
+                        : "text-ink-600 hover:bg-cream-100"
+                    )}
                   >
-                    {cat.name}
+                    {cat.image && (
+                      <img
+                        src={cat.image}
+                        alt={cat.name}
+                        className="h-9 w-9 shrink-0 rounded-lg object-cover sm:h-10 sm:w-10 lg:h-7 lg:w-7 lg:rounded"
+                      />
+                    )}
+                    <span className="line-clamp-2 text-[10px] font-medium leading-tight sm:text-xs lg:text-sm">
+                      {cat.name}
+                    </span>
                   </button>
                 ))}
               </div>
+            </aside>
+
+            {/* ── Right: Subcategories + Products ── */}
+            <div className="min-w-0 flex-1">
 
               {/* Subcategory chips */}
               {subCategories.length > 0 && (
-                <div className="mb-4 flex flex-wrap gap-2">
+                <div className="mb-3 flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
                   {subCategories.map((sub) => (
                     <button
                       key={sub.id}
                       onClick={() => setActiveSub(sub.id)}
-                      className={cn("flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition", activeSub === sub.id ? "border-primary-500 bg-primary-50 text-primary-600" : "border-ink-500/15 text-ink-600 hover:border-primary-300")}
+                      className={cn(
+                        "shrink-0 flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition",
+                        activeSub === sub.id
+                          ? "border-primary-500 bg-primary-50 text-primary-600"
+                          : "border-ink-500/15 text-ink-600 hover:border-primary-300"
+                      )}
                     >
-                      {sub.image && <img src={sub.image} alt="" className="h-4 w-4 rounded-full object-cover" />}
+                      {sub.image && <img src={sub.image} alt="" className="h-3.5 w-3.5 rounded-full object-cover" />}
                       {sub.name}
                     </button>
                   ))}
@@ -153,38 +124,39 @@ export default function Shop() {
               )}
 
               {/* Toolbar */}
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h1 className="text-xl font-bold">
-                    {activeCat ? categories.find((c) => c.id === activeCat)?.name : "All Products"}
-                  </h1>
-                  {activeSub && <p className="text-sm text-ink-500">{sorted.length} products found</p>}
-                </div>
-                <div className="flex items-center gap-2">
-                  <select value={sort} onChange={(e) => setSort(e.target.value)} className="input !w-auto py-2 text-sm">
-                    <option value="popularity">Popularity</option>
-                    <option value="priceLowHigh">Price: Low to High</option>
-                    <option value="priceHighLow">Price: High to Low</option>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <p className="truncate text-xs text-ink-500 sm:text-sm">
+                  {activeSub ? `${sorted.length} products` : ""}
+                </p>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <select
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value)}
+                    className="rounded-lg border border-ink-500/15 bg-cream-50 px-2 py-1 text-xs outline-none focus:border-primary-500"
+                  >
+                    <option value="popularity">Popular</option>
+                    <option value="priceLowHigh">Price ↑</option>
+                    <option value="priceHighLow">Price ↓</option>
                     <option value="rating">Top Rated</option>
                   </select>
                   <div className="hidden gap-1 rounded-lg border border-ink-500/15 p-1 sm:flex">
-                    <button onClick={() => setView("grid")} className={cn("rounded p-1.5", view === "grid" && "bg-primary-50 text-primary-600")}><LayoutGrid size={16} /></button>
-                    <button onClick={() => setView("list")} className={cn("rounded p-1.5", view === "list" && "bg-primary-50 text-primary-600")}><List size={16} /></button>
+                    <button onClick={() => setView("grid")} className={cn("rounded p-1", view === "grid" && "bg-primary-50 text-primary-600")}><LayoutGrid size={14} /></button>
+                    <button onClick={() => setView("list")} className={cn("rounded p-1", view === "list" && "bg-primary-50 text-primary-600")}><List size={14} /></button>
                   </div>
                 </div>
               </div>
 
               {/* Products */}
               {!activeSub ? (
-                <EmptyState icon={PackageSearch} title="Select a category" subtitle="Choose a category and subcategory to browse products" />
+                <EmptyState icon={PackageSearch} title="Select a subcategory" subtitle="Choose a subcategory above to browse products" />
               ) : productsLoading ? (
-                <div className={cn("grid gap-4", view === "grid" ? "grid-cols-2 sm:grid-cols-3 xl:grid-cols-4" : "grid-cols-1")}>
-                  {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
+                <div className={cn("grid gap-3", view === "grid" ? "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1")}>
+                  {Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)}
                 </div>
               ) : sorted.length === 0 ? (
                 <EmptyState icon={PackageSearch} title="No products found" subtitle="No products in this subcategory yet." />
               ) : (
-                <div className={cn("grid gap-4", view === "grid" ? "grid-cols-2 sm:grid-cols-3 xl:grid-cols-4" : "grid-cols-1")}>
+                <div className={cn("grid gap-3", view === "grid" ? "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1")}>
                   {sorted.map((p, i) => <ProductCard key={p.id} product={normalize(p)} index={i} />)}
                 </div>
               )}
