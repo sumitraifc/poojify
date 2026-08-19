@@ -152,7 +152,7 @@ export default function LoginDrawer({ open, onClose }) {
               <Button type="submit" fullWidth loading={loading} className="mt-5">Send OTP</Button>
             </motion.form>
           ) : (
-            <motion.div key="of" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <motion.form key="of" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={(e) => { e.preventDefault(); handleVerify(); }}>
               <button onClick={() => setStep("mobile")} className="mb-3 flex items-center gap-1 text-sm text-ink-500 hover:text-primary-600">
                 <ArrowLeft size={14} /> Back
               </button>
@@ -181,8 +181,8 @@ export default function LoginDrawer({ open, onClose }) {
                   <RotateCcw size={12} /> Resend OTP
                 </button>
               )}
-              <Button fullWidth loading={loading} className="mt-5" onClick={handleVerify}>Verify & Continue</Button>
-            </motion.div>
+              <Button type="submit" fullWidth loading={loading} className="mt-5">Verify & Continue</Button>
+            </motion.form>
           )}
         </AnimatePresence>
 

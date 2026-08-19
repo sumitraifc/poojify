@@ -20,7 +20,12 @@ const trustBadges = [
   { icon: Headset, title: "24x7 Support", subtitle: "We're always here to help you" },
 ];
 
-const ID_TYPES = ["aadhaar", "pan", "voter_id", "driving_licence"];
+const ID_TYPES = [
+  { value: "aadhaar", label: "Aadhaar Card", placeholder: "XXXX XXXX XXXX", maxLen: 12, numeric: true },
+  { value: "voter_id", label: "Voter ID", placeholder: "ABC1234567", maxLen: 10, numeric: false },
+  { value: "pan", label: "PAN Card", placeholder: "ABCDE1234F", maxLen: 10, numeric: false },
+  { value: "passport", label: "Passport", placeholder: "A1234567", maxLen: 8, numeric: false },
+];
 
 export default function PurohitRegister() {
   const navigate = useNavigate();
@@ -39,8 +44,8 @@ export default function PurohitRegister() {
   const [form, setForm] = useState({
     full_name: "", email: "", mobile: "", about: "",
     id_type: "aadhaar", id_number: "",
-    house_no: "", city: "", area: "", pincode: "",
-    religion_id: "", experience_years: "",
+    house_no: "", city: "", area: "", pincode: "", state: "",
+    religion_id: "", experience_years: "", service_radius: "",
     language_ids: [], pooja_ids: [],
   });
   const [files, setFiles] = useState({
@@ -72,12 +77,13 @@ export default function PurohitRegister() {
         const get = (type) => c.find((x) => x.types.includes(type))?.long_name || "";
         const city = get("locality") || get("administrative_area_level_2");
         const pincode = get("postal_code");
+        const state = get("administrative_area_level_1");
         const sublocality = get("sublocality_level_1") || get("sublocality");
         const route = get("route");
         const streetNo = get("street_number");
         const house_no = [streetNo, route].filter(Boolean).join(", ");
         const area = sublocality;
-        setForm((f) => ({ ...f, city, pincode, area, house_no }));
+        setForm((f) => ({ ...f, city, pincode, state, area, house_no }));
       }
     } catch {}
   }
@@ -186,7 +192,7 @@ export default function PurohitRegister() {
           <Breadcrumb items={[{ label: "Home", to: "/" }, { label: "Purohit Ji Booking", to: "/purohit-booking" }, { label: "Registration" }]} />
 
           <div className="mb-8 text-center">
-            <h1 className="text-2xl font-bold sm:text-3xl">Purohit (Pandit) Registration</h1>
+            <h1 className="text-2xl font-bold sm:text-3xl">Purohit Registration</h1>
             <p className="mt-1 text-ink-500">Join Poojify and start serving devotees. Fill in the details below to create your account.</p>
           </div>
 
@@ -227,14 +233,52 @@ export default function PurohitRegister() {
               <FormCard step={2} title="Identity Verification">
                 <div>
                   <label className="label">Document Type <span className="text-danger">*</span></label>
-                  <select value={form.id_type} onChange={set("id_type")} className="input" required>
-                    {ID_TYPES.map((t) => <option key={t} value={t}>{t.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</option>)}
+                  <select value={form.id_type} onChange={(e) => setForm((f) => ({ ...f, id_type: e.target.value, id_number: "" }))} className="input" required>
+                    {ID_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                 </div>
-                <F label="Document Number" value={form.id_number} onChange={set("id_number")} placeholder="Enter document number" required />
-                <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Document Number <span className="text-danger">*</span></label>
+                  <input
+                    value={form.id_number}
+                    onChange={(e) => {
+                      const active = ID_TYPES.find((t) => t.value === form.id_type);
+                      let val = e.target.value;
+                      if (active?.numeric) val = val.replace(/\D/g, "").slice(0, active.maxLen);
+                      else val = val.toUpperCase().slice(0, active?.maxLen ?? 20);
+                      setForm((f) => ({ ...f, id_number: val }));
+                    }}
+                    placeholder={ID_TYPES.find((t) => t.value === form.id_type)?.placeholder ?? "Enter document number"}
+                    className="input"
+                    required
+                  />
+                  <p className="mt-1 text-xs text-ink-500">
+                    {form.id_type === "aadhaar" && `${form.id_number.length}/12 digits`}
+                    {form.id_type === "voter_id" && "Format: ABC1234567 (10 chars)"}
+                    {form.id_type === "pan" && "Format: ABCDE1234F (10 chars)"}
+                    {form.id_type === "passport" && "Format: A1234567 (8 chars)"}
+                  </p>
+                </div>
+                <div className={form.id_type === "pan" ? "" : "grid grid-cols-2 gap-3"}>
                   <UploadBox label="Front Side" onChange={(e) => onFileChange("document_proof", e)} file={files.document_proof} />
-                  <UploadBox label="Back Side" onChange={(e) => onFileChange("document_proof_back", e)} file={files.document_proof_back} />
+                  {form.id_type !== "pan" && (
+                    <UploadBox label="Back Side" onChange={(e) => onFileChange("document_proof_back", e)} file={files.document_proof_back} />
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <UploadBox label="Work Proof" onChange={(e) => onFileChange("work_proof", e)} file={files.work_proof} />
+                  <UploadBox label="Certificate" onChange={(e) => onFileChange("certificate", e)} file={files.certificate} />
+                </div>
+                <div>
+                  <label className="label">Pooja Images <span className="text-xs text-ink-500">(multiple)</span></label>
+                  <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-ink-500/20 bg-cream-100 p-4 text-center hover:border-primary-400">
+                    <input ref={poojaImagesRef} type="file" accept="image/*" multiple className="hidden" onChange={onPoojaImages} />
+                    <ImageIcon size={20} className="text-ink-500/40" />
+                    <span className="text-xs font-medium">Upload Pooja Images</span>
+                    {files.pooja_images.length > 0
+                      ? <span className="text-xs text-primary-600">{files.pooja_images.length} file(s) selected</span>
+                      : <span className="text-[10px] text-ink-500">JPG, PNG (Multiple allowed)</span>}
+                  </label>
                 </div>
               </FormCard>
 
@@ -275,10 +319,24 @@ export default function PurohitRegister() {
                   <F label="City" value={form.city} onChange={set("city")} placeholder="City" required />
                   <F label="Pincode" value={form.pincode} onChange={(e) => setForm((f) => ({ ...f, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) }))} placeholder="Pincode" required />
                 </div>
+                <F label="State" value={form.state} onChange={set("state")} placeholder="State" required />
+
+                <div>
+                  <label className="label">Service Radius (km) <span className="text-danger">*</span></label>
+                  <input
+                    type="number"
+                    min={1} max={100}
+                    value={form.service_radius}
+                    onChange={(e) => setForm((f) => ({ ...f, service_radius: e.target.value.replace(/\D/g, "").slice(0, 3) }))}
+                    placeholder="e.g. 10"
+                    className="input"
+                    required
+                  />
+                </div>
               </FormCard>
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 lg:grid-cols-1">
               {/* Religious & Professional */}
               <FormCard step={4} title="Religious & Professional Details">
                 <div className="grid grid-cols-2 gap-3">
@@ -317,30 +375,12 @@ export default function PurohitRegister() {
                 </div>
               </FormCard>
 
-              {/* Documents */}
-              <FormCard step={5} title="Documents & Work Proof">
-                <div className="grid grid-cols-2 gap-3">
-                  <UploadBox label="Work Proof" onChange={(e) => onFileChange("work_proof", e)} file={files.work_proof} />
-                  <UploadBox label="Certificate" onChange={(e) => onFileChange("certificate", e)} file={files.certificate} />
-                </div>
-                <div>
-                  <label className="label">Pooja Images <span className="text-xs text-ink-500">(multiple)</span></label>
-                  <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-ink-500/20 bg-cream-100 p-4 text-center hover:border-primary-400">
-                    <input ref={poojaImagesRef} type="file" accept="image/*" multiple className="hidden" onChange={onPoojaImages} />
-                    <ImageIcon size={20} className="text-ink-500/40" />
-                    <span className="text-xs font-medium">Upload Pooja Images</span>
-                    {files.pooja_images.length > 0
-                      ? <span className="text-xs text-primary-600">{files.pooja_images.length} file(s) selected</span>
-                      : <span className="text-[10px] text-ink-500">JPG, PNG (Multiple allowed)</span>}
-                  </label>
-                </div>
-              </FormCard>
             </div>
 
             {/* Declaration */}
             <div className="card">
               <div className="mb-4 flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white">6</span>
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white">5</span>
                 <h3 className="font-semibold">Declaration</h3>
               </div>
               <label className="mb-5 flex items-start gap-2 text-sm text-ink-700">

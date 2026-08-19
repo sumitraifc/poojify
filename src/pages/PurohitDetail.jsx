@@ -100,15 +100,15 @@ export default function PurohitDetail() {
               </div>
 
               {/* Contact Info */}
-              <div className="card space-y-2">
+              {/* <div className="card space-y-2">
                 <h3 className="mb-3 font-semibold">Contact Info</h3>
                 <p className="flex items-center gap-2 text-sm text-ink-600"><Phone size={14} className="text-primary-500" /> {purohit.mobile}</p>
                 {purohit.email && <p className="flex items-center gap-2 text-sm text-ink-600"><Mail size={14} className="text-primary-500" /> {purohit.email}</p>}
                 {purohit.pincode && <p className="flex items-center gap-2 text-sm text-ink-600"><MapPin size={14} className="text-primary-500" /> {purohit.area}, {purohit.city} — {purohit.pincode}</p>}
-              </div>
+              </div> */}
 
               {/* Documents */}
-              {(purohit.document_proof || purohit.work_proof || purohit.certificate) && (
+              {/* {(purohit.document_proof || purohit.work_proof || purohit.certificate) && (
                 <div className="card">
                   <h3 className="mb-3 flex items-center gap-2 font-semibold"><FileText size={15} className="text-primary-500" /> Verification Documents</h3>
                   <div className="flex flex-wrap gap-3">
@@ -132,7 +132,7 @@ export default function PurohitDetail() {
                     )}
                   </div>
                 </div>
-              )}
+              )} */}
             </div>
 
             {/* Booking Panel */}

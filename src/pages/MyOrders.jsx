@@ -9,7 +9,7 @@ import { getOrderHistory } from "../api/orderApi";
 import { formatINR } from "../utils/format";
 import { PackageSearch } from "lucide-react";
 
-const tabs = ["All", "Pending", "Confirmed", "Shipped", "Delivered", "Cancelled", "Returned"];
+const tabs = ["All", "Pending", "Confirmed", "Delivered", "Cancelled",];
 
 const statusStyle = {
   Pending:   "badge bg-yellow-100 text-yellow-700",
@@ -35,7 +35,7 @@ export default function MyOrders() {
   }, [tab, orders]);
 
   if (isLoading) return <PageLoader />;
-
+// console.log("orders", orders);
   return (
     <PageTransition>
       <div className="section-y">

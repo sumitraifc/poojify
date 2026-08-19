@@ -238,7 +238,7 @@ export default function Checkout() {
               </div>
               <div className="space-y-2 border-t border-ink-500/10 pt-3 text-sm">
                 <Row label={`Subtotal (${items.length} Items)`} value={formatINR(subtotal)} />
-                {gstPct > 0 && <Row label={`GST (${gstPct}%)`} value={formatINR(gstAmount)} />}
+                {/* {gstPct > 0 && <Row label={`GST (${gstPct}%)`} value={formatINR(gstAmount)} />} */}
                 <Row
                   label="Delivery Charges"
                   value={Number(deliveryCharge) === 0 ? "FREE" : formatINR(deliveryCharge)}
@@ -246,7 +246,10 @@ export default function Checkout() {
                 />
               </div>
               <div className="mt-3 flex items-center justify-between border-t border-ink-500/10 pt-3">
-                <span className="font-semibold">Grand Total</span>
+                <div>
+                  <span className="font-semibold">Grand Total</span>
+                  <p className="text-[10px] text-ink-500">(incl. all taxes & charges)</p>
+                </div>
                 <span className="text-lg font-bold text-primary-600">{formatINR(grandTotal)}</span>
               </div>
               <Button fullWidth className="mt-4" loading={placing} onClick={handlePlaceOrder}>
