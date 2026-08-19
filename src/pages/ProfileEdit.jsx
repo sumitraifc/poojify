@@ -114,10 +114,9 @@ export default function ProfileEdit() {
                   <span className="flex items-center bg-cream-200 px-3 text-sm">+91</span>
                   <input
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    readOnly
                     type="tel"
-                    className="w-full bg-transparent px-3 py-2.5 text-sm outline-none"
-                    placeholder="Mobile number"
+                    className="w-full bg-transparent px-3 py-2.5 text-sm outline-none cursor-not-allowed text-ink-400"
                   />
                 </div>
               </div>

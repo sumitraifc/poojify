@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { Link } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ShieldCheck, Wallet, RotateCcw } from "lucide-react";
 import Logo from "../../components/layout/Logo";
@@ -15,12 +16,22 @@ export default function LoginDrawer({ open, onClose }) {
   const [mobile, setMobile] = useState("");
   const [otp, setOtp] = useState(new Array(4).fill(""));
   const [loading, setLoading] = useState(false);
+  const [timer, setTimer] = useState(0);
   const inputsRef = useRef([]);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    if (timer <= 0) return;
+    timerRef.current = setInterval(() => setTimer((t) => t - 1), 1000);
+    return () => clearInterval(timerRef.current);
+  }, [timer]);
 
   function reset() {
     setStep("mobile");
     setMobile("");
     setOtp(new Array(4).fill(""));
+    setTimer(0);
+    clearInterval(timerRef.current);
   }
 
   function handleClose() {
@@ -36,6 +47,7 @@ export default function LoginDrawer({ open, onClose }) {
       const res = await sendOtp(mobile);
       showToast.success(res.message || "OTP sent successfully");
       setStep("otp");
+      setTimer(45);
     } catch (err) {
       showToast.error(err.message || "Failed to send OTP");
     } finally {
@@ -160,16 +172,25 @@ export default function LoginDrawer({ open, onClose }) {
                   />
                 ))}
               </div>
-              <button className="mt-3 flex items-center gap-1 text-xs text-primary-600">
-                <RotateCcw size={12} /> Resend OTP in 00:45
-              </button>
+              {timer > 0 ? (
+                <p className="mt-3 text-xs text-ink-500">
+                  Resend OTP in 00:{String(timer).padStart(2, "0")}
+                </p>
+              ) : (
+                <button onClick={handleSendOtp} className="mt-3 flex items-center gap-1 text-xs text-primary-600">
+                  <RotateCcw size={12} /> Resend OTP
+                </button>
+              )}
               <Button fullWidth loading={loading} className="mt-5" onClick={handleVerify}>Verify & Continue</Button>
             </motion.div>
           )}
         </AnimatePresence>
 
         <p className="mt-5 text-center text-xs text-ink-500">
-          By continuing, you agree to our <a className="link">Terms & Conditions</a> & <a className="link">Privacy Policy</a>
+          By continuing, you agree to our{" "}
+          <Link to="/terms" onClick={handleClose} className="link">Terms & Conditions</Link>
+          {" "}&{" "}
+          <Link to="/privacy-policy" onClick={handleClose} className="link">Privacy Policy</Link>
         </p>
 
         <div className="mt-6 grid grid-cols-3 gap-2 border-t border-ink-500/10 pt-5 text-center text-[11px] text-ink-500">

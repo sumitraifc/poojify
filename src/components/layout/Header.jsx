@@ -86,6 +86,7 @@ export default function Header() {
   const { data: cartData } = useQuery({
     queryKey: ["cart-list"],
     queryFn: getCartList,
+    enabled: isAuthenticated,
     select: (res) => res?.data ?? [],
   });
   const cartItems = Array.isArray(cartData) ? cartData : [];

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Heart } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
@@ -10,6 +11,7 @@ import { useAuthStore } from "../store/authStore";
 import { getWishlist } from "../api/wishlistApi";
 
 export default function Wishlist() {
+  const navigate = useNavigate();
   const { items, setItems } = useWishlistStore();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
@@ -21,7 +23,6 @@ export default function Wishlist() {
 
   useEffect(() => {
     if (data?.items) {
-      // normalize API response to match ProductCard shape
       const normalized = data.items.map((p) => ({
         id: p.item_id ?? p.id,
         name: p.name,
@@ -48,6 +49,7 @@ export default function Wishlist() {
               title="Your wishlist is empty"
               subtitle="Save items you love so you can find them easily later."
               actionLabel="Explore Products"
+              onAction={() => navigate("/shop")}
             />
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">

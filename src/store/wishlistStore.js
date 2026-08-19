@@ -42,6 +42,7 @@ export const useWishlistStore = create(
 
       isWishlisted: (id) => !!get().items.find((i) => i.id === id),
       remove: (id) => set({ items: get().items.filter((i) => i.id !== id) }),
+      clearWishlist: () => set({ items: [] }),
     }),
     { name: "poojify-wishlist" }
   )

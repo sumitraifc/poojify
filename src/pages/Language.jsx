@@ -57,10 +57,6 @@ export default function Language() {
               })}
             </div>
 
-            <p className="mt-5 text-xs text-ink-500">
-              Every screen — header, buttons, cart, checkout, and booking flows — updates instantly once you switch. New
-              languages can be added by dropping a JSON file into <code className="rounded bg-cream-200 px-1">src/i18n/locales</code>.
-            </p>
           </div>
         </div>
       </div>

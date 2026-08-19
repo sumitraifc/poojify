@@ -19,6 +19,7 @@ const customerService = [
   { label: "Terms & Conditions", to: "/terms" },
   { label: "Privacy Policy", to: "/privacy-policy" },
   { label: "Contact Us", to: "/contact" },
+  { label: "Language", to: "/language" },
 ];
 const myAccount = [
   { label: "My Orders", to: "/orders" },

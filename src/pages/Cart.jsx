@@ -162,9 +162,9 @@ export default function Cart() {
                           </td>
                           <td className="p-4">
                             <QuantityStepper value={item.qty} onChange={(v) => handleQtyChange(item, v)} />
-                            <button onClick={() => handleRemove(item)} className="mt-1.5 flex items-center gap-1 text-xs text-danger">
+                            {/* <button onClick={() => handleRemove(item)} className="mt-1.5 flex items-center gap-1 text-xs text-danger">
                               <Trash2 size={12} /> Remove
-                            </button>
+                            </button> */}
                           </td>
                           <td className="p-4 font-semibold">{formatINR(item.price * item.qty)}</td>
                           <td className="p-4">
@@ -314,7 +314,7 @@ export default function Cart() {
                 </p>
               </div>
 
-              <div className="card">
+              {/* <div className="card">
                 <h3 className="mb-3 font-semibold">Why Shop With Poojify?</h3>
                 <div className="space-y-3">
                   {perks.map((p) => (
@@ -327,7 +327,7 @@ export default function Cart() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

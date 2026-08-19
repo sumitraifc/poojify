@@ -32,9 +32,11 @@ export default function ProfileDrawer({ open, onClose }) {
   }
 
   function handleLogout() {
-    logout();
     onClose();
-    navigate("/");
+    setTimeout(() => {
+      logout();
+      navigate("/");
+    }, 300);
   }
 
   const accountLinks = [

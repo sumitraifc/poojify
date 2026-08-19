@@ -10,6 +10,7 @@ import { useThemeStore } from "./store/themeStore.js";
 import { useLocationStore } from "./store/locationStore.js";
 import { useSettingsStore } from "./store/settingsStore.js";
 import AppRoutes from "./Routes.jsx";
+import { setQueryClientRef } from "./store/authStore.js";
 
 // Apply saved theme immediately on boot to avoid a light-mode flash
 document.documentElement.classList.toggle("dark", useThemeStore.getState().theme === "dark");
@@ -27,6 +28,7 @@ const queryClient = new QueryClient({
     },
   },
 });
+setQueryClientRef(queryClient);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

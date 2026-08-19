@@ -116,7 +116,7 @@ export default function Shop() {
                           : "border-ink-500/15 text-ink-600 hover:border-primary-300"
                       )}
                     >
-                      {sub.image && <img src={sub.image} alt="" className="h-3.5 w-3.5 rounded-full object-cover" />}
+                      {sub.image && <img src={sub.image} alt="" className="h-5 w-5 rounded-full object-cover" />}
                       {sub.name}
                     </button>
                   ))}
@@ -139,10 +139,10 @@ export default function Shop() {
                     <option value="priceHighLow">Price ↓</option>
                     <option value="rating">Top Rated</option>
                   </select>
-                  <div className="hidden gap-1 rounded-lg border border-ink-500/15 p-1 sm:flex">
+                  {/* <div className="hidden gap-1 rounded-lg border border-ink-500/15 p-1 sm:flex">
                     <button onClick={() => setView("grid")} className={cn("rounded p-1", view === "grid" && "bg-primary-50 text-primary-600")}><LayoutGrid size={14} /></button>
                     <button onClick={() => setView("list")} className={cn("rounded p-1", view === "list" && "bg-primary-50 text-primary-600")}><List size={14} /></button>
-                  </div>
+                  </div> */}
                 </div>
               </div>
 

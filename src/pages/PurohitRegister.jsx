@@ -196,11 +196,11 @@ export default function PurohitRegister() {
               <FormCard step={1} title="Basic Information">
                 <div className="mb-2 flex flex-col items-center gap-2">
                   <button type="button" onClick={() => profileRef.current?.click()}
-                    className="relative flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-ink-500/20 bg-cream-100 overflow-hidden">
+                    className="relative flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-ink-500/20 bg-cream-100">
                     {previews.profile_image
-                      ? <img src={previews.profile_image} className="h-full w-full object-cover" alt="profile" />
+                      ? <img src={previews.profile_image} className="h-full w-full object-cover rounded-full overflow-hidden" alt="profile" />
                       : <ImageIcon size={22} className="text-ink-500/40" />}
-                    <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary-500 text-white">
+                    <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary-500 text-white shadow-md z-10">
                       <Camera size={13} />
                     </span>
                   </button>
