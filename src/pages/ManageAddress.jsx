@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { GoogleMap, useJsApiLoader, Marker, StandaloneSearchBox } from "@react-google-maps/api";
 import { LocateFixed, MapPin, Search, Plus, Home, Briefcase, Tag, Edit, Trash2 } from "lucide-react";
@@ -27,6 +27,7 @@ export default function ManageAddress() {
   const { state } = useLocation();
   const navigate = useNavigate();
   const searchBoxRef = useRef(null);
+  const queryClient = useQueryClient();
 
   const [center, setCenter] = useState({ lat: 26.8467, lng: 80.9462 });
   const [markerPos, setMarkerPos] = useState(null);
@@ -222,11 +223,14 @@ export default function ManageAddress() {
 
       let res;
       if (form.id) {
-        // Update existing address
         res = await updateAddress({ ...payload, address_id: form.id });
+        setAddresses((prev) => prev.map((a) => a.id === form.id ? { ...a, ...payload, address_type: form.addressType, house_no: form.houseNo } : a));
       } else {
-        // Add new address
         res = await addAddress(payload);
+        // Push new address into local state immediately, then refetch in background
+        const newAddr = res.data ?? { ...payload, id: Date.now(), address_type: form.addressType, house_no: form.houseNo };
+        setAddresses((prev) => [...prev, newAddr]);
+        queryClient.invalidateQueries({ queryKey: ["address-list"] });
       }
 
       showToast.success(res.message || (form.id ? "Address updated successfully" : "Address saved successfully"));
