@@ -14,10 +14,10 @@ const quickLinks = [
   { label: "Contact Us", to: "/contact" },
 ];
 const customerService = [
-  { label: "Shipping Policy", to: "/shipping-policy" },
+  { label: "Child Safety Policy", to: "/child-safety" },
   { label: "Return & Refund Policy", to: "/refund-policy" },
   { label: "Terms & Conditions", to: "/terms" },
-  { label: "FAQ", to: "/faq" },
+  { label: "Privacy Policy", to: "/privacy-policy" },
   { label: "Contact Us", to: "/contact" },
 ];
 const myAccount = [

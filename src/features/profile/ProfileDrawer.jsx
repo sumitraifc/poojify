@@ -62,7 +62,7 @@ export default function ProfileDrawer({ open, onClose }) {
             </span>
             <div>
               <p className="font-semibold">Hello, {user?.name || "Devotee"} 🙏</p>
-              <p className="text-sm text-ink-500">{user?.phone || "+91 98765 43210"}</p>
+              <p className="text-sm text-ink-500">{user?.mobile || user?.phone || ""}</p>
             </div>
           </div>
           <button onClick={() => go("/profile/edit")} className="flex h-8 w-8 items-center justify-center rounded-full border border-ink-500/15 hover:bg-cream-200">
@@ -115,7 +115,7 @@ export default function ProfileDrawer({ open, onClose }) {
 
         <p className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wide text-ink-500 dark:text-cream-100/50">Appearance</p>
         <div className="mb-5 space-y-1">
-          <button
+          {/* <button
             onClick={toggleTheme}
             className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm hover:bg-cream-100 dark:hover:bg-white/5"
           >
@@ -129,7 +129,7 @@ export default function ProfileDrawer({ open, onClose }) {
                 <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${theme === "dark" ? "translate-x-4" : "translate-x-0.5"}`} />
               </span>
             </span>
-          </button>
+          </button> */}
           <button onClick={() => go("/language")} className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm hover:bg-cream-100 dark:hover:bg-white/5">
             <span className="flex items-center gap-3"><Globe size={16} className="text-primary-500" /> Language</span>
             <span className="flex items-center gap-1 text-ink-500 dark:text-cream-100/60">{t("brand") === "पूजिफाई" ? "हिन्दी" : "English"} <ChevronRight size={14} /></span>

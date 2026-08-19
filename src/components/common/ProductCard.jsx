@@ -40,7 +40,7 @@ export default function ProductCard({ product, index = 0 }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: Math.min(index, 6) * 0.05, duration: 0.4 }}
-      className="group relative flex flex-col rounded-3xl bg-cream-50 p-2.5 shadow-card transition-shadow hover:shadow-cardHover"
+      className="group relative flex flex-col rounded-3xl bg-cream-50 p-2 sm:p-2.5 shadow-card transition-shadow hover:shadow-cardHover"
     >
       {/* Image */}
       <div className="relative rounded-2xl overflow-hidden">
@@ -48,7 +48,7 @@ export default function ProductCard({ product, index = 0 }) {
           <img
             src={product.image}
             alt={product.name}
-            className="h-44 w-full object-cover transition-transform duration-300 group-hover:scale-105 sm:h-48"
+            className="h-44 w-full object-cover transition-transform duration-300 group-hover:scale-105 sm:h-44"
             loading="lazy"
           />
         </Link>
@@ -62,28 +62,22 @@ export default function ProductCard({ product, index = 0 }) {
       </div>
 
       {/* Info + stepper row */}
-      <div className="mt-3 px-1.5 pb-1">
-        <div className="flex items-start justify-between gap-2">
+      <div className="mt-2 min-w-0 px-1.5 pb-1 sm:mt-3">
+        <div className="flex items-start justify-between gap-1 sm:gap-2">
           {/* Text */}
           <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-baseline gap-1.5">
-              <span className="text-base font-bold text-success">{formatINR(product.price)}</span>
+            <div className="flex flex-wrap items-baseline gap-1">
+              <span className="text-sm font-bold text-success sm:text-base">{formatINR(product.price)}</span>
               {product.mrp > product.price && (
-                <span className="text-xs text-ink-500/60 line-through">{formatINR(product.mrp)}</span>
+                <span className="text-[10px] text-ink-500/60 line-through sm:text-xs">{formatINR(product.mrp)}</span>
               )}
             </div>
             {off > 0 && (
-              <span className="text-xs font-semibold text-primary-600">{off}% OFF</span>
+              <span className="text-[10px] font-semibold text-primary-600 sm:text-xs">{off}% OFF</span>
             )}
-            <Link
-              to={`/shop/product/${product.id}`}
-              className="mt-1 block line-clamp-2 text-xs font-semibold uppercase tracking-wide text-ink-900 hover:text-primary-600"
-            >
-              {product.name}
-            </Link>
           </div>
 
-          {/* Cart stepper — inline, no absolute */}
+          {/* Cart stepper */}
           <div className="shrink-0">
             <AnimatePresence mode="wait" initial={false}>
               {qty === 0 ? (
@@ -120,6 +114,13 @@ export default function ProductCard({ product, index = 0 }) {
             </AnimatePresence>
           </div>
         </div>
+        <Link
+          to={`/shop/product/${product.id}`}
+          className="mt-0.5 block overflow-hidden text-[10px] font-semibold uppercase tracking-wide text-ink-900 hover:text-primary-600 sm:mt-1 sm:text-xs w-full px-1.5"
+          style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+        >
+          {product.name}
+        </Link>
       </div>
     </motion.div>
   );

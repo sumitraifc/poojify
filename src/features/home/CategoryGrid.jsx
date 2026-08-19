@@ -4,7 +4,7 @@ import SectionHeader from "../../components/common/SectionHeader";
 
 // list = hamesha horizontal scroll (mobile + desktop)
 // grid = hamesha grid layout
-const listClass = "flex gap-4 overflow-x-auto pb-2 scrollbar-hide";
+const listClass = "flex sm:gap-[14px]  gap-2 overflow-x-auto overflow-y-hidden pb-2 scrollbar-hide";
 const gridClass = "grid grid-cols-4 gap-3 sm:grid-cols-6 lg:grid-cols-8";
 
 export default function CategoryGrid({ data }) {
@@ -45,7 +45,7 @@ function CategoryItem({ cat, i, viewType }) {
         <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-ink-500/10 bg-white shadow-card transition-transform hover:scale-105 sm:h-20 sm:w-20">
           <img src={cat.image} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
         </div>
-        <span className="text-center text-[10px] font-medium text-ink-700 sm:text-xs">{cat.name}</span>
+        <span className="text-center text-[10px] font-medium text-ink-700 sm:text-xs" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{cat.name}</span>
       </Link>
     </motion.div>
   );

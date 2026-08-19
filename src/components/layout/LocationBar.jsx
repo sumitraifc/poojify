@@ -1,12 +1,15 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapPin, ChevronDown } from "lucide-react";
 import { useLocationStore } from "../../store/locationStore";
 
 export default function LocationBar() {
   const navigate = useNavigate();
-  const { latitude, longitude, address } = useLocationStore();
+  const { address, captureOnce } = useLocationStore();
 
-  const label = address || "Set your location";
+  useEffect(() => { captureOnce(); }, []);
+
+  const label = address || "Detecting location...";
 
   return (
     <button

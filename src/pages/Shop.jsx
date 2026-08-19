@@ -68,7 +68,7 @@ export default function Shop() {
           <Breadcrumb items={[{ label: "Home", to: "/" }, { label: "Shop" }]} />
 
           {/* Main layout: left cat sidebar + right content */}
-          <div className="flex gap-3">
+          <div className="flex sm:gap-3 gap-1">
 
             {/* ── Left: Category sidebar (all screens) ── */}
             <aside className="w-16 shrink-0 sm:w-20 lg:w-52">
@@ -150,13 +150,13 @@ export default function Shop() {
               {!activeSub ? (
                 <EmptyState icon={PackageSearch} title="Select a subcategory" subtitle="Choose a subcategory above to browse products" />
               ) : productsLoading ? (
-                <div className={cn("grid gap-3", view === "grid" ? "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1")}>
+                <div className={cn("grid gap-1 sm:gap-3", view === "grid" ? "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1")}>
                   {Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)}
                 </div>
               ) : sorted.length === 0 ? (
                 <EmptyState icon={PackageSearch} title="No products found" subtitle="No products in this subcategory yet." />
               ) : (
-                <div className={cn("grid gap-3", view === "grid" ? "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1")}>
+                <div className={cn("grid gap-1 sm:gap-3", view === "grid" ? "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1")}>
                   {sorted.map((p, i) => <ProductCard key={p.id} product={normalize(p)} index={i} />)}
                 </div>
               )}

@@ -138,7 +138,7 @@ export default function ProductDetail() {
                   Add to Cart
                 </Button>
               </div>
-              <Button variant="outline" fullWidth className="mt-3">Buy Now</Button>
+              {/* <Button variant="outline" fullWidth className="mt-3">Buy Now</Button> */}
             </div>
           </div>
 

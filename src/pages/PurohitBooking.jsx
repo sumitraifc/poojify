@@ -133,7 +133,13 @@ function PurohitCard({ purohit }) {
   const startingPrice = purohit.specializations?.[0]?.price ?? null;
   return (
     <div className="card flex flex-col gap-4 sm:flex-row sm:items-center">
-      <img src={purohit.profile_image} alt={purohit.full_name} className="h-24 w-24 shrink-0 rounded-full object-cover" />
+      {purohit.profile_image ? (
+        <img src={purohit.profile_image} alt={purohit.full_name} className="h-24 w-24 shrink-0 rounded-full object-cover border-2 border-yellow-400" />
+      ) : (
+        <span className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-2 border-yellow-400 bg-yellow-50 text-3xl font-bold text-yellow-600">
+          {purohit.full_name?.charAt(0)?.toUpperCase() ?? "P"}
+        </span>
+      )}
       <div className="flex-1">
         <p className="flex items-center gap-1.5 font-semibold">
           {purohit.full_name} <BadgeCheck size={15} className="text-primary-500" />

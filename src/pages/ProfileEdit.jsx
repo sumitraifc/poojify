@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Camera, User } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
 import Button from "../components/common/Button";
@@ -44,6 +44,8 @@ export default function ProfileEdit() {
     setImagePreview(URL.createObjectURL(file));
   }
 
+  const queryClient = useQueryClient();
+
   async function handleSubmit(e) {
     e.preventDefault();
     setSaving(true);
@@ -57,7 +59,16 @@ export default function ProfileEdit() {
       if (imageFile) fd.append("profile_image", imageFile);
 
       const res = await updateProfile(fd);
-      updateUser({ name, email, mobile: phone, gender, dob, profile_image: res?.data?.profile_image ?? imagePreview });
+      const updated = res?.data?.user ?? res?.data ?? {};
+      updateUser({
+        name: updated.name ?? name,
+        email: updated.email ?? email,
+        mobile: updated.mobile ?? phone,
+        gender: updated.gender ?? gender,
+        dob: updated.dob ?? dob,
+        profile_image: updated.profile_image ?? imagePreview,
+      });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
       showToast.success(res?.message || "Profile updated successfully");
       navigate("/");
     } catch (err) {
@@ -77,14 +88,16 @@ export default function ProfileEdit() {
 
             {/* Avatar picker */}
             <div className="mb-6 flex flex-col items-center gap-2">
-              <button type="button" onClick={() => fileRef.current?.click()} className="relative flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 text-primary-600 overflow-hidden">
-                {imagePreview
-                  ? <img src={imagePreview} alt="profile" className="h-full w-full object-cover" />
-                  : <User size={28} />}
-                <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary-500 text-white">
+              <div className="relative">
+                <button type="button" onClick={() => fileRef.current?.click()} className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 text-primary-600 overflow-hidden">
+                  {imagePreview
+                    ? <img src={imagePreview} alt="profile" className="h-full w-full object-cover" />
+                    : <User size={28} />}
+                </button>
+                <span onClick={() => fileRef.current?.click()} className="absolute -bottom-1 -right-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-primary-500 text-white shadow">
                   <Camera size={13} />
                 </span>
-              </button>
+              </div>
               <p className="text-xs text-ink-500">Tap to change photo</p>
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
             </div>

@@ -29,7 +29,7 @@ export default function NewBestOffers({ data }) {
                 viewType === "list" ? "w-72 shrink-0" : "w-auto"
               }`}
             >
-              <img src={b.image} alt={b.name} className="h-40 w-full object-cover" loading="lazy" />
+              <img src={b.image} alt={b.name} className="sm:h-56 h-46 w-full object-fit" loading="lazy" />
               <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
               <span className="absolute left-4 top-4 flex items-center gap-1 rounded-full bg-primary-500 px-3 py-1 text-xs font-semibold text-white">
                 <Flame size={12} /> Best Offer

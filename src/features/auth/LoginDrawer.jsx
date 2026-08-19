@@ -51,6 +51,31 @@ export default function LoginDrawer({ open, onClose }) {
     if (value && idx < 3) inputsRef.current[idx + 1]?.focus();
   }
 
+  function handleOtpKeyDown(e, idx) {
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      const next = [...otp];
+      if (next[idx]) {
+        next[idx] = "";
+        setOtp(next);
+      } else if (idx > 0) {
+        next[idx - 1] = "";
+        setOtp(next);
+        inputsRef.current[idx - 1]?.focus();
+      }
+    }
+  }
+
+  function handleOtpPaste(e) {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 4);
+    if (!pasted) return;
+    const next = new Array(4).fill("");
+    pasted.split("").forEach((ch, i) => { next[i] = ch; });
+    setOtp(next);
+    inputsRef.current[Math.min(pasted.length, 3)]?.focus();
+  }
+
   async function handleVerify() {
     const otpStr = otp.join("");
     if (otpStr.length !== 4) return showToast.error("Enter complete 4-digit OTP");
@@ -119,17 +144,19 @@ export default function LoginDrawer({ open, onClose }) {
               <button onClick={() => setStep("mobile")} className="mb-3 flex items-center gap-1 text-sm text-ink-500 hover:text-primary-600">
                 <ArrowLeft size={14} /> Back
               </button>
-              <div className="flex justify-between gap-2">
+              <div className="flex justify-center gap-2">
                 {otp.map((digit, idx) => (
                   <input
                     key={idx}
                     ref={(el) => (inputsRef.current[idx] = el)}
                     value={digit}
                     onChange={(e) => handleOtpChange(e.target.value, idx)}
+                    onKeyDown={(e) => handleOtpKeyDown(e, idx)}
+                    onPaste={handleOtpPaste}
                     type="text"
                     inputMode="numeric"
                     maxLength={1}
-                    className="h-12 w-11 rounded-lg border border-ink-500/15 text-center text-lg font-semibold outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                    className="h-12 w-12 rounded-xl border-2 border-ink-500/15 text-center text-xl font-bold outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                   />
                 ))}
               </div>

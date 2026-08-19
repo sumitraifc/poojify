@@ -31,9 +31,20 @@ export default function PolicyPage() {
         <div className="section max-w-3xl">
           <Breadcrumb items={[{ label: "Home", to: "/" }, { label: title }]} />
           <h1 className="mb-4 text-2xl font-bold">{title}</h1>
-          <div className="card text-sm text-ink-600 dark:text-cream-100/70 prose prose-sm max-w-none">
+          <div className="card text-sm text-ink-600 dark:text-cream-100/70">
             {html ? (
-              <div dangerouslySetInnerHTML={{ __html: html }} />
+              <div
+                className="[&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-3 [&_h1]:text-ink-900 [&_h1]:dark:text-cream-100
+                  [&_h2]:text-lg [&_h2]:font-bold [&_h2]:mb-2 [&_h2]:text-ink-900 [&_h2]:dark:text-cream-100
+                  [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mb-2
+                  [&_p]:mb-3 [&_p]:leading-relaxed
+                  [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ul]:space-y-1
+                  [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_ol]:space-y-1
+                  [&_a]:text-primary-600 [&_a]:underline
+                  [&_strong]:font-semibold [&_strong]:text-ink-900 [&_strong]:dark:text-cream-100
+                  [&_br]:block"
+                dangerouslySetInnerHTML={{ __html: html }}
+              />
             ) : (
               <p>Content coming soon.</p>
             )}

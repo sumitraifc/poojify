@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { Search, ShoppingCart, Menu, LogIn, User, Bell, CheckCheck, TrendingUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -65,7 +65,8 @@ export default function Header() {
   const queryClient = useQueryClient();
   const { pathname } = useLocation();
 
-  // Close mobile menu on any route change
+  const handleMenuClose = useCallback(() => setMenuOpen(false), []);
+
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
@@ -354,7 +355,7 @@ export default function Header() {
         </div>
       </nav>
 
-      <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} onLoginClick={() => setLoginOpen(true)} />
+      <MobileMenu open={menuOpen} onClose={handleMenuClose} onLoginClick={() => setLoginOpen(true)} />
       <LoginDrawer open={loginOpen} onClose={() => setLoginOpen(false)} />
       <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} />
     </header>

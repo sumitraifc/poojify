@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, MapPin, Eye, CalendarX, ShieldCheck, KeyRound } from "lucide-react";
-import { Link } from "react-router-dom";
+import { CalendarDays, MapPin, CalendarX, ShieldCheck, KeyRound, XCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
 import Button from "../components/common/Button";
 import EmptyState from "../components/common/EmptyState";
 import { PageLoader } from "../components/common/Loader";
-import { getBookingHistory, verifyBooking } from "../api/panditApi";
+import { getBookingHistory, verifyBooking, cancelBooking } from "../api/panditApi";
 import { formatINR, formatDate } from "../utils/format";
 import { showToast } from "../components/common/Toast";
 
@@ -28,6 +27,8 @@ export default function MyBookings() {
   const qc = useQueryClient();
   const [verifyBookingId, setVerifyBookingId] = useState(null);
   const [pin, setPin] = useState("");
+  const [cancelId, setCancelId] = useState(null);
+  const [reason, setReason] = useState("");
 
   const { data: bookings = [], isLoading } = useQuery({
     queryKey: ["pandit-booking-history"],
@@ -44,6 +45,17 @@ export default function MyBookings() {
       setPin("");
     },
     onError: (err) => showToast.error(err?.message || "Invalid PIN. Please try again."),
+  });
+
+  const { mutate: cancel, isPending: cancelling } = useMutation({
+    mutationFn: () => cancelBooking(cancelId, reason),
+    onSuccess: (res) => {
+      showToast.success(res?.message || "Booking cancelled!");
+      qc.invalidateQueries({ queryKey: ["pandit-booking-history"] });
+      setCancelId(null);
+      setReason("");
+    },
+    onError: (err) => showToast.error(err?.message || "Could not cancel booking."),
   });
 
   function openVerify(id) {
@@ -88,9 +100,9 @@ export default function MyBookings() {
                       <tr key={b.id} className="border-t border-ink-500/10">
                         <td className="p-4">
                           <div className="flex items-center gap-3">
-                            {b.pandit?.profile_image && (
-                              <img src={b.pandit.profile_image} alt={b.pandit.name} className="h-11 w-11 rounded-full object-cover" />
-                            )}
+                            <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-yellow-400 bg-yellow-50 text-lg font-bold text-yellow-600">
+                              {b.pandit?.name?.charAt(0)?.toUpperCase() ?? "P"}
+                            </span>
                             <div>
                               <p className="font-medium">{b.pandit?.name ?? "—"}</p>
                               <p className="text-xs text-ink-500">{b.pandit?.experience} yrs exp</p>
@@ -119,10 +131,10 @@ export default function MyBookings() {
                         <td className="p-4"><StatusBadge status={b.status} /></td>
                         <td className="p-4">
                           <div className="flex flex-col gap-1.5">
-                            <Link to={`/my-bookings/${b.id}`} className="btn-outline btn-sm"><Eye size={13} /> View</Link>
-                            {b.status_text === "completed" && b.is_verified === 0 && (
-                              <button onClick={() => openVerify(b.id)} className="btn-sm flex items-center gap-1 rounded-lg border border-success/30 bg-success/10 px-3 text-xs font-semibold text-success hover:bg-success/20 transition">
-                                <KeyRound size={12} /> Verify
+                            {/* <Link to={`/my-bookings/${b.id}`} className="btn-outline btn-sm"><Eye size={13} /> View</Link> */}
+                            {b.status !== 2 && b.status !== 3 && (
+                              <button onClick={() => { setReason(""); setCancelId(b.id); }} className="btn-sm flex items-center gap-1 rounded-lg border border-red-300 bg-red-50 px-3 text-xs font-semibold text-red-600 hover:bg-red-100 transition">
+                                <XCircle size={12} /> Cancel
                               </button>
                             )}
                           </div>
@@ -138,9 +150,9 @@ export default function MyBookings() {
                 {bookings.map((b) => (
                   <div key={b.id} className="card">
                     <div className="mb-3 flex items-center gap-3">
-                      {b.pandit?.profile_image && (
-                        <img src={b.pandit.profile_image} alt={b.pandit.name} className="h-12 w-12 rounded-full object-cover" />
-                      )}
+                      <span className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-yellow-400 bg-yellow-50 text-lg font-bold text-yellow-600">
+                        {b.pandit?.name?.charAt(0)?.toUpperCase() ?? "P"}
+                      </span>
                       <div className="flex-1">
                         <p className="font-medium">{b.pandit?.name ?? "—"}</p>
                         <p className="flex items-center gap-1 text-xs text-ink-500">
@@ -165,10 +177,10 @@ export default function MyBookings() {
                       <span className="rounded-lg bg-primary-50 px-3 py-1 text-sm font-bold tracking-widest text-primary-600">{b.booking_pin ?? "—"}</span>
                     </div>
                     <div className="mt-3 flex gap-2">
-                      <Link to={`/my-bookings/${b.id}`} className="btn-outline btn-sm flex-1">View Details</Link>
-                      {b.status_text === "completed" && b.is_verified === 0 && (
-                        <button onClick={() => openVerify(b.id)} className="flex items-center gap-1 rounded-lg border border-success/30 bg-success/10 px-3 text-xs font-semibold text-success hover:bg-success/20 transition">
-                          <KeyRound size={12} /> Verify
+                      {/* <Link to={`/my-bookings/${b.id}`} className="btn-outline btn-sm flex-1">View Details</Link> */}
+                      {b.status !== 2 && b.status !== 3 && (
+                        <button onClick={() => { setReason(""); setCancelId(b.id); }} className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition">
+                          <XCircle size={12} /> Cancel Booking
                         </button>
                       )}
                     </div>
@@ -179,6 +191,31 @@ export default function MyBookings() {
           )}
         </div>
       </div>
+
+      {/* Cancel Modal */}
+      {cancelId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="card w-full max-w-sm">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-500"><XCircle size={20} /></span>
+              <div>
+                <h2 className="font-bold">Cancel Booking</h2>
+                <p className="text-xs text-ink-500">Please provide a reason for cancellation</p>
+              </div>
+            </div>
+            <textarea
+              className="input mb-4 h-24 resize-none"
+              placeholder="Enter reason..."
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            />
+            <div className="flex gap-3">
+              <Button variant="outline" fullWidth onClick={() => { setCancelId(null); setReason(""); }}>Back</Button>
+              <Button fullWidth loading={cancelling} disabled={!reason.trim()} onClick={() => cancel()} className="!bg-red-500 hover:!bg-red-600">Confirm Cancel</Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Verify PIN Modal */}
       {verifyBookingId && (
