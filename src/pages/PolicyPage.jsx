@@ -4,17 +4,17 @@ import Breadcrumb from "../components/common/Breadcrumb";
 import { useSettingsStore } from "../store/settingsStore";
 
 const routeTypeMap = {
-  "/terms": "Terms Conditions",
-  "/privacy-policy": "Privacy Policy",
-  "/refund-policy": "Refund & Cancellation Policy",
-  "/child-safety": "Child Safety Policy",
+  "/policy/terms-conditions": "Terms Conditions",
+  "/policy/privacy-policy": "Privacy Policy",
+  "/policy/refund-and-cancellation-policy": "Refund & Cancellation Policy",
+  "/policy/child-safety-policy": "Child Safety Policy",
 };
 
 const routeTitleMap = {
-  "/terms": "Terms & Conditions",
-  "/privacy-policy": "Privacy Policy",
-  "/refund-policy": "Refund & Cancellation Policy",
-  "/child-safety": "Child Safety Policy",
+  "/policy/terms-conditions": "Terms & Conditions",
+  "/policy/privacy-policy": "Privacy Policy",
+  "/policy/refund-and-cancellation-policy": "Refund & Cancellation Policy",
+  "/policy/child-safety-policy": "Child Safety Policy",
   "/shipping-policy": "Shipping Policy",
   "/faq": "Frequently Asked Questions",
 };

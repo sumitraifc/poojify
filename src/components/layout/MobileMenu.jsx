@@ -10,8 +10,8 @@ const links = [
   { to: "/purohit-booking", key: "nav.purohitBooking" },
   { to: "/shop", key: "nav.shop" },
   { to: "/combo-offers", key: "nav.comboOffers" },
-  { to: "/about", key: "nav.aboutUs" },
-  { to: "/contact", key: "nav.contactUs" },
+  { to: "/policy/about-us", key: "nav.aboutUs" },
+  { to: "/policy/contact-us", key: "nav.contactUs" },
 ];
 
 export default function MobileMenu({ open, onClose, onLoginClick }) {

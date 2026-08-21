@@ -45,47 +45,86 @@ export default function Checkout() {
 
   const [placing, setPlacing] = useState(false);
 
+  // const { mutate: submitOrder } = useMutation({
+  //   mutationFn: (body) => placeOrder(body),
+  //   onSuccess: async (res) => {
+  //     const orderId = res?.data?.order_id ?? res?.order_id;
+  //     if (payment === "ONLINE" && orderId) {
+  //       try {
+  //         const txnRes = await initiatePaytmOrder(orderId);
+  //         const txnToken = txnRes?.data?.txnToken ?? txnRes?.txnToken;
+  //         openPaytmCheckout({
+  //           orderId,
+  //           txnToken,
+  //           amount: grandTotal,
+  //           onSuccess: () => {
+  //             showToast.success("Payment successful!");
+  //             clearCart();
+  //             queryClient.invalidateQueries({ queryKey: ["cart-list"] });
+  //             setPlacing(false);
+  //             navigate("/orders");
+  //           },
+  //           onFailure: (msg) => {
+  //             showToast.error(msg || "Payment failed");
+  //             setPlacing(false);
+  //           },
+  //         });
+  //       } catch {
+  //         showToast.error("Failed to initiate payment");
+  //         setPlacing(false);
+  //       }
+  //     } else {
+  //       showToast.success("Order placed successfully!");
+  //       clearCart();
+  //       queryClient.invalidateQueries({ queryKey: ["cart-list"] });
+  //       setPlacing(false);
+  //       navigate("/orders");
+  //     }
+  //   },
+  //   onError: (err) => {
+  //     showToast.error(err?.message ?? "Failed to place order");
+  //     setPlacing(false);
+  //   },
+  // });
+
+
   const { mutate: submitOrder } = useMutation({
-    mutationFn: (body) => placeOrder(body),
-    onSuccess: async (res) => {
-      const orderId = res?.data?.order_id ?? res?.order_id;
-      if (payment === "ONLINE" && orderId) {
-        try {
-          const txnRes = await initiatePaytmOrder(orderId);
-          const txnToken = txnRes?.data?.txnToken ?? txnRes?.txnToken;
-          openPaytmCheckout({
-            orderId,
-            txnToken,
-            amount: grandTotal,
-            onSuccess: () => {
-              showToast.success("Payment successful!");
-              clearCart();
-              queryClient.invalidateQueries({ queryKey: ["cart-list"] });
-              setPlacing(false);
-              navigate("/orders");
-            },
-            onFailure: (msg) => {
-              showToast.error(msg || "Payment failed");
-              setPlacing(false);
-            },
-          });
-        } catch {
-          showToast.error("Failed to initiate payment");
+  mutationFn: (body) => placeOrder(body),
+  onSuccess: async (res) => {
+    const data = res?.data;
+    const isOnline = payment === "ONLINE" && data?.txnToken;
+
+    if (isOnline) {
+      openPaytmCheckout({
+        orderId: data.orderId,     
+        txnToken: data.txnToken,
+        amount: data.amount,         
+        mid: data.mid,              
+        onSuccess: () => {
+          showToast.success("Payment successful!");
+          clearCart();
+          queryClient.invalidateQueries({ queryKey: ["cart-list"] });
           setPlacing(false);
-        }
-      } else {
-        showToast.success("Order placed successfully!");
-        clearCart();
-        queryClient.invalidateQueries({ queryKey: ["cart-list"] });
-        setPlacing(false);
-        navigate("/orders");
-      }
-    },
-    onError: (err) => {
-      showToast.error(err?.message ?? "Failed to place order");
+          navigate("/orders");
+        },
+        onFailure: (msg) => {
+          showToast.error(msg || "Payment failed");
+          setPlacing(false);
+        },
+      });
+    } else {
+      showToast.success(res?.message || "Order placed successfully!");
+      clearCart();
+      queryClient.invalidateQueries({ queryKey: ["cart-list"] });
       setPlacing(false);
-    },
-  });
+      navigate("/orders");
+    }
+  },
+  onError: (err) => {
+    showToast.error(err?.message ?? "Failed to place order");
+    setPlacing(false);
+  },
+});
 
   const { data: cartData, isLoading: cartLoading } = useQuery({
     queryKey: ["cart-list"],

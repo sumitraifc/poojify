@@ -95,58 +95,181 @@ export default function BookingConfirm() {
 
   const availability = availData?.available ?? null;
 
-  async function handleConfirm() {
-    if (!agreed) return showToast.error("Please accept Terms & Conditions");
-    if (!availability) return showToast.error("Pandit is not available on selected date");
-    if (!selectedAddressId) return showToast.error("Please select a delivery address");
+async function handleConfirm() {
+  if (!agreed) {
+    return showToast.error("Please accept Terms & Conditions");
+  }
 
-    setConfirming(true);
-    try {
-      const res = await bookPandit({
-        pandit_id: Number(id),
-        booking_date: date,
-        address_id: selectedAddressId,
-        pooja_ids: JSON.stringify(selected),
-        payment_type: paymentType,
+  if (!availability) {
+    return showToast.error(
+      "Pandit is not available on selected date"
+    );
+  }
+
+  if (!selectedAddressId) {
+    return showToast.error(
+      "Please select a delivery address"
+    );
+  }
+
+  setConfirming(true);
+
+  try {
+    // 1. Create booking
+    const res = await bookPandit({
+      pandit_id: Number(id),
+      booking_date: date,
+      address_id: selectedAddressId,
+      pooja_ids: JSON.stringify(selected),
+      payment_type: paymentType,
+    });
+
+    console.log("Booking response:", res);
+
+    const bookingId =
+      res?.data?.booking_id ??
+      res?.booking_id;
+
+    const totalAmount =
+      res?.data?.total_amount ??
+      grandTotal;
+
+    // =========================================
+    // ONLINE PAYMENT
+    // =========================================
+    if (paymentType === "online" && bookingId) {
+      const paytmOrderId =
+        res?.data?.orderId ??
+        res?.data?.order_id;
+
+      const txnToken =
+        res?.data?.txnToken;
+
+      const paytmMid =
+        res?.data?.mid;
+
+      const paytmAmount =
+        res?.data?.amount;
+
+      if (
+        !paytmOrderId ||
+        !txnToken ||
+        !paytmMid ||
+        !paytmAmount
+      ) {
+        console.error("Invalid Paytm response:", res);
+
+        showToast.error(
+          "Invalid payment details received from server"
+        );
+
+        setConfirming(false);
+        return;
+      }
+
+      console.log("Paytm Payment Details:", {
+        bookingId,
+        paytmOrderId,
+        txnToken,
+        paytmMid,
+        paytmAmount,
       });
 
-      const bookingId = res?.data?.booking_id ?? res?.booking_id;
-      const totalAmount = res?.data?.total_amount ?? grandTotal;
+      try {
+        openPaytmCheckout({
+          orderId: paytmOrderId,
+          txnToken: txnToken,
+          amount: paytmAmount,
+          mid: paytmMid,
 
-      if (paymentType === "online" && bookingId) {
-        try {
-          const txnRes = await initiatePaytmBooking(bookingId);
-          const txnToken = txnRes?.data?.txnToken ?? txnRes?.txnToken;
-          openPaytmCheckout({
-            orderId: bookingId,
-            txnToken,
-            amount: totalAmount,
-            onSuccess: () => {
-              showToast.success("Payment successful!");
-              setConfirming(false);
-              navigate(`/purohit-booking/${id}/success`, {
-                state: { bookingId, date, selectedOptions, grandTotal: totalAmount, purohit },
-              });
-            },
-            onFailure: (msg) => {
-              showToast.error(msg || "Payment failed");
-              setConfirming(false);
-            },
-          });
-        } catch {
-          showToast.error("Failed to initiate payment");
-          setConfirming(false);
-        }
-      } else {
-        navigate(`/purohit-booking/${id}/success`, {
-          state: { bookingId, date, selectedOptions, grandTotal: totalAmount, purohit },
+          onSuccess: (paymentData) => {
+            console.log(
+              "Paytm Payment Success:",
+              paymentData
+            );
+
+            showToast.success(
+              "Payment successful!"
+            );
+
+            setConfirming(false);
+
+            navigate(
+              `/purohit-booking/${id}/success`,
+              {
+                state: {
+                  bookingId,
+                  orderId: paytmOrderId,
+                  txnId: paymentData?.txnId,
+                  date,
+                  selectedOptions,
+                  grandTotal: paytmAmount,
+                  purohit,
+                },
+              }
+            );
+          },
+
+          onFailure: (msg) => {
+            console.error(
+              "Paytm Payment Failed:",
+              msg
+            );
+
+            showToast.error(
+              msg || "Payment failed"
+            );
+
+            setConfirming(false);
+          },
         });
+
+      } catch (error) {
+        console.error(
+          "Paytm checkout error:",
+          error
+        );
+
+        showToast.error(
+          "Unable to open payment checkout"
+        );
+
+        setConfirming(false);
       }
-    } catch (err) {
-      showToast.error(err?.message || "Booking failed. Please try again.");
-      setConfirming(false);
+
+      return;
     }
+
+    // =========================================
+    // COD / OFFLINE PAYMENT
+    // =========================================
+
+    setConfirming(false);
+
+    navigate(
+      `/purohit-booking/${id}/success`,
+      {
+        state: {
+          bookingId,
+          date,
+          selectedOptions,
+          grandTotal: totalAmount,
+          purohit,
+        },
+      }
+    );
+
+  } catch (err) {
+    console.error("Booking error:", err);
+
+    showToast.error(
+      err?.message ||
+      "Booking failed. Please try again."
+    );
+
+    setConfirming(false);
   }
+}
 
   return (
     <PageTransition>
@@ -282,10 +405,10 @@ export default function BookingConfirm() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-ink-500">Items Total ({selectedOptions.length})</span><span>{formatINR(itemsTotal)}</span></div>
                 {deliveryCharge > 0 && <div className="flex justify-between"><span className="text-ink-500">Delivery Charge</span><span>{formatINR(deliveryCharge)}</span></div>}
-                {gstPct > 0 && <div className="flex justify-between"><span className="text-ink-500">GST ({gstPct}%)</span><span>{formatINR(gstAmount)}</span></div>}
+                {/* {gstPct > 0 && <div className="flex justify-between"><span className="text-ink-500">GST ({gstPct}%)</span><span>{formatINR(gstAmount)}</span></div>} */}
               </div>
               <div className="mt-3 flex items-center justify-between border-t border-ink-500/10 pt-3">
-                <span className="font-semibold">Grand Total</span>
+                <span className="font-semibold">Grand Total <span className="text-[9px]">(include all tax)</span></span>
                 <span className="text-lg font-bold text-primary-600">{formatINR(grandTotal)}</span>
               </div>
 

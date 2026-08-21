@@ -10,15 +10,15 @@ const quickLinks = [
   { label: "Purohit Ji Booking", to: "/purohit-booking" },
   { label: "Shop", to: "/shop" },
   { label: "Combo Offers", to: "/combo-offers" },
-  { label: "About Us", to: "/about" },
-  { label: "Contact Us", to: "/contact" },
+  { label: "About Us", to: "/policy/about-us" },
+  { label: "Contact Us", to: "/policy/contact-us" },
 ];
 const customerService = [
-  { label: "Child Safety Policy", to: "/child-safety" },
-  { label: "Return & Refund Policy", to: "/refund-policy" },
-  { label: "Terms & Conditions", to: "/terms" },
-  { label: "Privacy Policy", to: "/privacy-policy" },
-  { label: "Contact Us", to: "/contact" },
+  { label: "Child Safety Policy", to: "/policy/child-safety-policy" },
+  { label: "Return & Refund Policy", to: "/policy/refund-and-cancellation-policy" },
+  { label: "Terms & Conditions", to: "/policy/terms-conditions" },
+  { label: "Privacy Policy", to: "/policy/privacy-policy" },
+  { label: "Contact Us", to: "/policy/contact-us" },
   { label: "Language", to: "/language" },
 ];
 const myAccount = [

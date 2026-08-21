@@ -188,9 +188,9 @@ export default function LoginDrawer({ open, onClose }) {
 
         <p className="mt-5 text-center text-xs text-ink-500">
           By continuing, you agree to our{" "}
-          <Link to="/terms" onClick={handleClose} className="link">Terms & Conditions</Link>
+          <Link to="/policy/terms-conditions" onClick={handleClose} className="link">Terms & Conditions</Link>
           {" "}&{" "}
-          <Link to="/privacy-policy" onClick={handleClose} className="link">Privacy Policy</Link>
+          <Link to="/policy/privacy-policy" onClick={handleClose} className="link">Privacy Policy</Link>
         </p>
 
         <div className="mt-6 grid grid-cols-3 gap-2 border-t border-ink-500/10 pt-5 text-center text-[11px] text-ink-500">

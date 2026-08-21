@@ -35,6 +35,7 @@ export default function BookingSuccess() {
   // bookingId from fresh booking flow OR from URL param
   const bookingId = state?.bookingId ?? id;
 
+  
   const { data: bookingData, isLoading, refetch } = useQuery({
     queryKey: ["booking-status", bookingId],
     queryFn: () => getBookingStatus(bookingId),

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, Wallet, Landmark, IndianRupee, CheckCircle2, Clock, XCircle, Trash2, Pencil, Plus, KeyRound, ShieldCheck } from "lucide-react";
+import { CalendarDays, Wallet, Landmark, IndianRupee, CheckCircle2, Clock, XCircle, Trash2, Pencil, Plus, KeyRound, ShieldCheck, User, Phone, MapPin, ChevronDown, ChevronUp, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
@@ -9,22 +9,24 @@ import { PageLoader } from "../components/common/Loader";
 import { formatINR, formatDate } from "../utils/format";
 import { showToast } from "../components/common/Toast";
 import {
-  getPanditBookHistory, getWalletSummary,
+  getPanditBookHistory, getMyBookings, getWalletSummary, getTransactions,
   getPanditAccount, addPanditAccount, updatePanditAccount, deletePanditAccount,
   verifyBooking,
 } from "../api/panditApi";
 
 const TABS = [
-  { key: "bookings", label: "Booking History", icon: CalendarDays },
-  { key: "wallet",   label: "My Wallet",        icon: Wallet },
-  { key: "bank",     label: "Bank Account",      icon: Landmark },
+  { key: "recent",   label: "Recent Bookings", icon: BookOpen },
+  { key: "bookings", label: "Booking History",  icon: CalendarDays },
+  { key: "wallet",   label: "My Wallet",         icon: Wallet },
+  { key: "bank",     label: "Bank Account",       icon: Landmark },
 ];
 
 const STATUS_MAP = {
   0: { label: "Pending",   cls: "bg-yellow-100 text-yellow-700" },
-  1: { label: "Confirmed", cls: "bg-blue-100 text-blue-700" },
-  2: { label: "Completed", cls: "bg-green-100 text-green-700" },
-  3: { label: "Cancelled", cls: "bg-red-100 text-red-700" },
+  3: { label: "Pending",   cls: "bg-yellow-100 text-yellow-700" },
+  1: { label: "Completed", cls: "bg-green-100 text-green-700" },
+  2: { label: "Cancelled", cls: "bg-red-100 text-red-700" },
+  // 3: { label: "On Going",  cls: "bg-blue-100 text-blue-700" },
 };
 
 function emptyBank() {
@@ -32,7 +34,7 @@ function emptyBank() {
 }
 
 export default function PanditDashboard() {
-  const [tab, setTab] = useState("bookings");
+  const [tab, setTab] = useState("recent");
 
   return (
     <PageTransition>
@@ -57,12 +59,197 @@ export default function PanditDashboard() {
             ))}
           </div>
 
+          {tab === "recent"   && <RecentBookingsTab />}
           {tab === "bookings" && <BookingHistoryTab />}
           {tab === "wallet"   && <WalletTab />}
           {tab === "bank"     && <BankTab />}
         </div>
       </div>
     </PageTransition>
+  );
+}
+
+/* ─── Recent Bookings ─── */
+function RecentBookingsTab() {
+  const qc = useQueryClient();
+  const [expandedId, setExpandedId] = useState(null);
+  const [verifyId, setVerifyId] = useState(null);
+  const [pin, setPin] = useState("");
+
+  // const { data: bookings = [], isLoading } = useQuery({
+  //   queryKey: ["my-bookings"],
+  //   queryFn: getMyBookings,
+  //   select: (res) => Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [],
+  // });
+  const { data: bookings = [], isLoading } = useQuery({
+    queryKey: ["my-bookings"],
+    queryFn: getMyBookings,
+    select: (res) => { const data = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+        return data.filter((booking) => booking.status === 0 || booking.status === 3);
+    },
+  });
+// console.log("Recent Bookings:", bookings);
+
+  
+  const { mutate: verify, isPending: verifying } = useMutation({
+    mutationFn: () => verifyBooking(verifyId, pin),
+    onSuccess: (res) => {
+      showToast.success(res?.message || "Booking verified!");
+      qc.invalidateQueries({ queryKey: ["my-bookings"] });
+      setVerifyId(null);
+      setPin("");
+    },
+    onError: (err) => showToast.error(err?.message || "Invalid PIN. Please try again."),
+  });
+
+  if (isLoading) return <PageLoader />;
+
+  if (bookings.length === 0)
+    return <p className="py-12 text-center text-ink-500">No recent bookings.</p>;
+
+  return (
+    <div className="space-y-3">
+      {bookings.map((b) => {
+        const s = STATUS_MAP[b.status] ?? { label: "Unknown", cls: "bg-gray-100 text-gray-600" };
+        const isOpen = expandedId === b.id;
+        const canVerify = b.is_verified === 0;
+
+        return (
+          <div key={b.id} className="card overflow-hidden p-0">
+            {/* Collapsed header */}
+            <button
+              type="button"
+              onClick={() => setExpandedId(isOpen ? null : b.id)}
+              className="flex w-full items-center gap-3 p-4 text-left transition hover:bg-cream-50"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-500">
+                <BookOpen size={18} />
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold">Booking #{b.id}</p>
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${s.cls}`}>{s.label}</span>
+                  <span className="badge capitalize">{b.payment_type}</span>
+                  {b.is_verified === 1 && (
+                    <span className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+                      <ShieldCheck size={11} /> Verified
+                    </span>
+                  )}
+                </div>
+                <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-500">
+                  <CalendarDays size={12} />
+                  {formatDate(b.booking_date)}
+                </p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {b.poojas?.map((p) => (
+                    <span key={p.id} className="badge text-[10px]">{p.pooja_name}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <p className="font-bold text-primary-600">{formatINR(b.total_amount)}</p>
+                {isOpen ? <ChevronUp size={16} className="text-ink-400" /> : <ChevronDown size={16} className="text-ink-400" />}
+              </div>
+            </button>
+
+            {/* Expanded details */}
+            {isOpen && (
+              <div className="border-t border-ink-500/10 px-4 pb-4 pt-3 space-y-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {/* Customer */}
+                  <div className="rounded-xl bg-cream-50 p-3 space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Customer</p>
+                    <div className="flex items-center gap-2 text-sm">
+                      <User size={14} className="shrink-0 text-primary-500" />
+                      <span className="font-medium">{b.user?.name ?? "—"}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone size={14} className="shrink-0 text-primary-500" />
+                      <a href={`tel:${b.user?.mobile}`} className="text-primary-600 hover:underline">{b.user?.mobile ?? "—"}</a>
+                    </div>
+                  </div>
+                  {/* Address */}
+                  <div className="rounded-xl bg-cream-50 p-3 space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Address</p>
+                    <div className="flex items-start gap-2 text-sm">
+                      <MapPin size={14} className="mt-0.5 shrink-0 text-primary-500" />
+                      <span>{[b.address?.house_no, b.address?.city, b.address?.pincode, b.state].filter(Boolean).join(", ")}</span>
+                    </div>
+                    {b.landmark && <p className="pl-5 text-xs text-ink-500">Landmark: {b.landmark}</p>}
+                  </div>
+                </div>
+
+                {/* Pooja breakdown */}
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">Pooja Details</p>
+                  <div className="space-y-1.5">
+                    {b.poojas?.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between rounded-lg border border-ink-500/10 px-3 py-2 text-sm">
+                        <span className="flex items-center gap-2"><BookOpen size={13} className="text-primary-400" />{p.pooja_name}</span>
+                        <span className="font-semibold text-primary-600">{formatINR(p.price)}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between rounded-lg bg-primary-50 px-3 py-2 text-sm font-bold">
+                      <span>Total</span>
+                      <span className="text-primary-600">{formatINR(b.total_amount)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment + PIN */}
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink-500/10 px-3 py-2.5">
+                  <div className="flex flex-wrap gap-4 text-sm">
+                    <span className="text-ink-500">Payment: <span className="font-semibold capitalize text-ink-700">{b.payment_type}</span></span>
+                    <span className="text-ink-500">Status: <span className="font-semibold capitalize text-ink-700">{b.payment_status}</span></span>
+                  </div>
+                  {/* <span className="flex items-center gap-1.5 rounded-lg bg-ink-500/5 px-3 py-1.5 font-mono text-xs font-bold tracking-widest">
+                    <KeyRound size={12} className="text-ink-400" /> PIN: {b.booking_pin}
+                  </span> */}
+                </div>
+
+                {/* Verify button */}
+                {canVerify && (
+                  <button
+                    onClick={() => { setPin(""); setVerifyId(b.id); }}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary-500 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-600"
+                  >
+                    <ShieldCheck size={16} /> Verify Booking
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Verify PIN Modal */}
+      {verifyId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="card w-full max-w-sm">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-50 text-primary-500">
+                <ShieldCheck size={20} />
+              </span>
+              <div>
+                <h2 className="font-bold">Verify Booking #{verifyId}</h2>
+                <p className="text-xs text-ink-500">Enter the 4-digit PIN from the customer</p>
+              </div>
+            </div>
+            <input
+              type="number"
+              className="input mb-4 text-center text-2xl tracking-widest"
+              placeholder="• • • •"
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+            />
+            <div className="flex gap-3">
+              <Button variant="outline" fullWidth onClick={() => { setVerifyId(null); setPin(""); }}>Cancel</Button>
+              <Button fullWidth loading={verifying} disabled={pin.length < 4} onClick={() => verify()}>Verify</Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -130,14 +317,14 @@ function BookingHistoryTab() {
                 </div>
                 <div className="flex items-center gap-3">
                   <p className="text-lg font-bold text-primary-600">{formatINR(b.total_amount)}</p>
-                  {canVerify && (
+                  {/* {canVerify && (
                     <button
                       onClick={() => { setPin(""); setVerifyBookingId(b.booking_id); }}
                       className="flex items-center gap-1.5 rounded-lg border border-success/30 bg-success/10 px-3 py-1.5 text-xs font-semibold text-success hover:bg-success/20 transition"
                     >
                       <KeyRound size={13} /> Verify
                     </button>
-                  )}
+                  )} */}
                 </div>
                 </div>
               </div>
@@ -184,6 +371,12 @@ function WalletTab() {
     select: (res) => res?.data,
   });
 
+  const { data: transactions = [], isLoading: txLoading } = useQuery({
+    queryKey: ["transactions"],
+    queryFn: getTransactions,
+    select: (res) => Array.isArray(res?.data) ? res.data : [],
+  });
+
   if (isLoading) return <PageLoader />;
 
   return (
@@ -210,6 +403,46 @@ function WalletTab() {
           </div>
         </div>
       )}
+
+      {/* Transactions */}
+      <div className="card">
+        <h3 className="mb-4 font-semibold">Transactions</h3>
+        {txLoading ? (
+          <p className="py-6 text-center text-sm text-ink-500">Loading...</p>
+        ) : transactions.length === 0 ? (
+          <p className="py-6 text-center text-sm text-ink-500">No transactions yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {transactions.map((t, i) => (
+              <div key={i} className="rounded-xl border border-ink-500/10 p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-500">
+                      <IndianRupee size={16} />
+                    </span>
+                    <div>
+                      <p className="font-semibold">Booking #{t.booking_id}</p>
+                      <p className="text-xs text-ink-500">{formatDate(t.created_at)}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-primary-600">{formatINR(t.pandit_earning)}</p>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      t.payment_status === "paid" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                    } capitalize`}>{t.payment_status}</span>
+                  </div>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 border-t border-ink-500/10 pt-2 text-xs sm:grid-cols-4">
+                  <div><p className="text-ink-500">Pooja Amount</p><p className="font-medium">{formatINR(t.pooja_amount)}</p></div>
+                  <div><p className="text-ink-500">GST</p><p className="font-medium">{formatINR(t.gst_amount)}</p></div>
+                  <div><p className="text-ink-500">Total Paid</p><p className="font-medium">{formatINR(t.total_amount_paid)}</p></div>
+                  <div><p className="text-ink-500">Commission</p><p className="font-medium">{formatINR(t.commission)}</p></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

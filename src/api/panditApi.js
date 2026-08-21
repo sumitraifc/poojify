@@ -32,7 +32,9 @@ export const cancelBooking = (booking_id, reason) =>
   axiosClient.post("/cancel-cod-pandit-booking", { booking_id, reason });
 
 export const getPanditBookHistory = () => axiosClient.get("/pandit_book_history");
+export const getMyBookings = () => axiosClient.get("/my-bookings");
 export const getWalletSummary = () => axiosClient.get("/wallet-summary");
+export const getTransactions = () => axiosClient.get("/transactions");
 export const getPanditAccount = () => axiosClient.get("/get-pandit-account");
 export const addPanditAccount = (body) => axiosClient.post("/add-pandit-account", body);
 export const updatePanditAccount = (body) => axiosClient.post("/update-pandit-account", body);

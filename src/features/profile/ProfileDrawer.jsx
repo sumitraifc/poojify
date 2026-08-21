@@ -42,16 +42,16 @@ export default function ProfileDrawer({ open, onClose }) {
   const accountLinks = [
     { icon: User, label: "Edit Profile", to: "/profile/edit" },
     { icon: MapPin, label: "Manage Address", to: "/profile/address" },
-    { icon: Headset, label: "Contact Us", to: "/contact" },
+    { icon: Headset, label: "Contact Us", to: "/policy/contact-us" },
     { icon: MessageSquare, label: "Send Feedback", to: "/profile/feedback" },
   ];
 
   const supportLinks = [
-    { icon: Shield, label: "Privacy Policy", to: "/privacy-policy" },
-    { icon: FileText, label: "Terms & Conditions", to: "/terms" },
-    { icon: RefreshCw, label: "Refund & Cancellation Policy", to: "/refund-policy" },
-    { icon: Info, label: "About Us", to: "/about" },
-    { icon: Headset, label: "Contact Us", to: "/contact" },
+    { icon: Shield, label: "Privacy Policy", to: "/policy/privacy-policy" },
+    { icon: FileText, label: "Terms & Conditions", to: "/policy/terms-conditions" },
+    { icon: RefreshCw, label: "Refund & Cancellation Policy", to: "/policy/refund-and-cancellation-policy" },
+    { icon: Info, label: "About Us", to: "/policy/about-us" },
+    { icon: Headset, label: "Contact Us", to: "/policy/contact-us" },
   ];
 
   return (

@@ -29,7 +29,7 @@ export default function NewPanditsSection({ data }) {
                 viewType === "list" ? "w-44 shrink-0" : "w-auto"
               }`}
             >
-              <img src={p.profile_image} alt={p.full_name} className="mx-auto h-20 w-20 rounded-full object-cover" />
+              <img src={p.profile_image} alt={p.full_name} className="mx-auto h-20 w-20 rounded-full object-cover border-2 border-yellow-400" />
               <p className="mt-3 line-clamp-1 font-semibold">{p.full_name}</p>
               <p className="mt-1 flex items-center justify-center gap-1 text-xs text-ink-500">
                 <MapPin size={12} /> {p.city}

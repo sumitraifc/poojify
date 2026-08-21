@@ -8,5 +8,8 @@ export function discountPercent(mrp, price) {
 }
 
 export function formatDate(date, options = { day: "numeric", month: "short", year: "numeric" }) {
-  return new Date(date).toLocaleDateString("en-IN", options);
+  const d = new Date(date);
+  // Use UTC values to avoid timezone shift (e.g. 19T18:30 UTC showing as 20th in IST)
+  const utc = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  return utc.toLocaleDateString("en-IN", options);
 }

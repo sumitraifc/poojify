@@ -11,11 +11,19 @@ import { getBookingHistory, verifyBooking, cancelBooking } from "../api/panditAp
 import { formatINR, formatDate } from "../utils/format";
 import { showToast } from "../components/common/Toast";
 
+// const STATUS_MAP = {
+//   0: { label: "Pending",   cls: "badge bg-yellow-100 text-yellow-700" },
+//   1: { label: "Confirmed", cls: "badge bg-blue-100 text-blue-700" },
+//   2: { label: "Completed", cls: "badge bg-green-100 text-green-700" },
+//   3: { label: "Cancelled", cls: "badge bg-red-100 text-red-700" },
+// };
+
 const STATUS_MAP = {
-  0: { label: "Pending",   cls: "badge bg-yellow-100 text-yellow-700" },
-  1: { label: "Confirmed", cls: "badge bg-blue-100 text-blue-700" },
-  2: { label: "Completed", cls: "badge bg-green-100 text-green-700" },
-  3: { label: "Cancelled", cls: "badge bg-red-100 text-red-700" },
+  0: { label: "Pending",   cls: "bg-yellow-100 text-yellow-700" },
+  3: { label: "Pending",   cls: "bg-yellow-100 text-yellow-700" },
+  1: { label: "Completed", cls: "bg-green-100 text-green-700" },
+  2: { label: "Cancelled", cls: "bg-red-100 text-red-700" },
+  // 3: { label: "On Going",  cls: "bg-blue-100 text-blue-700" },
 };
 
 function StatusBadge({ status }) {

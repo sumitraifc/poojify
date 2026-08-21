@@ -59,7 +59,7 @@ export default function PurohitDetail() {
             <div className="space-y-6">
               {/* Profile */}
               <div className="card flex flex-col gap-4 sm:flex-row">
-                <img src={purohit.profile_image} alt={purohit.full_name} className="h-28 w-28 rounded-full object-cover" />
+                <img src={purohit.profile_image} alt={purohit.full_name} className="h-28 w-28 rounded-full border-2 border-yellow-400 object-cover" />
                 <div>
                   <h1 className="flex items-center gap-1.5 text-xl font-bold">
                     {purohit.full_name} <BadgeCheck className="text-primary-500" />
@@ -83,7 +83,7 @@ export default function PurohitDetail() {
                   <h3 className="mb-3 flex items-center gap-2 font-semibold"><Image size={15} className="text-primary-500" /> Pooja Gallery</h3>
                   <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                     {purohit.pooja_images.map((img, i) => (
-                      <img key={i} src={img} alt={`pooja-${i}`} className="h-24 w-24 shrink-0 rounded-lg object-cover" />
+                      <img key={i} src={img} alt={`pooja-${i}`} className="h-24 w-24 shrink-0 rounded-lg object-cover border-2 border-primary-600 " />
                     ))}
                   </div>
                 </div>

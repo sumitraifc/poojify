@@ -66,13 +66,13 @@ export default function AppRoutes() {
           <Route path="/profile/address" element={<PrivateRoute><ManageAddress /></PrivateRoute>} />
           <Route path="/profile/feedback" element={<PrivateRoute><SendFeedback /></PrivateRoute>} />
 
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/terms" element={<PolicyPage />} />
-          <Route path="/privacy-policy" element={<PolicyPage />} />
+          <Route path="/policy/about-us" element={<About />} />
+          <Route path="/policy/contact-us" element={<Contact />} />
+          <Route path="/policy/terms-conditions" element={<PolicyPage />} />
+          <Route path="/policy/privacy-policy" element={<PolicyPage />} />
           <Route path="/shipping-policy" element={<PolicyPage />} />
-          <Route path="/refund-policy" element={<PolicyPage />} />
-          <Route path="/child-safety" element={<PolicyPage />} />
+          <Route path="/policy/refund-and-cancellation-policy" element={<PolicyPage />} />
+          <Route path="/policy/child-safety-policy" element={<PolicyPage />} />
           <Route path="/faq" element={<PolicyPage />} />
 
           <Route path="*" element={<NotFound />} />
