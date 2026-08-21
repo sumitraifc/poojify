@@ -93,7 +93,7 @@ export default function MyBookings() {
                 <table className="w-full text-sm">
                   <thead className="bg-cream-100 text-left text-xs text-ink-500">
                     <tr>
-                      <th className="p-4">Pandit Ji</th>
+                      <th className="p-4">Purohit Ji</th>
                       <th className="p-4">Poojas</th>
                       <th className="p-4">Booking Date</th>
                       <th className="p-4">Amount</th>

@@ -138,7 +138,7 @@ export default function PurohitDetail() {
             {/* Booking Panel */}
             <div className="card h-fit">
               <h3 className="mb-4 flex items-center gap-2 font-semibold">
-                <Sparkles size={16} className="text-primary-500" /> Book Pandit Ji
+                <Sparkles size={16} className="text-primary-500" /> Book Purohit Ji
               </h3>
 
               <label className="label flex items-center gap-1.5"><CalendarDays size={14} /> Select Date</label>

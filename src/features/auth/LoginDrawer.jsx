@@ -98,9 +98,9 @@ export default function LoginDrawer({ open, onClose }) {
       // fetch real profile after login
       try {
         const profile = await getProfile();
-        if (profile?.data?.user) {
-          const u = profile.data.user;
-          login({ name: u.name, email: u.email, phone: u.mobile, gender: u.gender, dob: u.dob, profile_image: u.profile_image }, res.token);
+        const u = profile?.data?.user ?? null;
+        if (u?.name || u?.mobile) {
+          login({ name: u.name, email: u.email, phone: u.mobile, mobile: u.mobile, gender: u.gender, dob: u.dob, profile_image: u.profile_image }, res.token);
         }
       } catch {}
       showToast.success(res.message || "Logged in successfully");

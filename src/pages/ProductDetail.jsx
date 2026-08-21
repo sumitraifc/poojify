@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Leaf, Gem, Package, Heart as HeartHand, Star, BadgeCheck, ThumbsUp } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
@@ -21,10 +21,9 @@ const highlights = [
   { icon: HeartHand, label: "Delivered with Care" },
 ];
 
-export default function ProductDetail() {
+export default function ProductDetail({ type = "product" }) {
   const { id } = useParams();
-  const { pathname } = useLocation();
-  const type = pathname.startsWith("/combo-offers") ? "combo" : "product";
+  const navigate = useNavigate();
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -59,14 +58,17 @@ export default function ProductDetail() {
   const { data: related = [] } = useQuery({
     queryKey: ["you-might-like", id, type],
     queryFn: () => getYouMightLike(id, type),
-    select: (res) => res?.items ?? res?.data?.items ?? [],
+    select: (res) => {
+      const d = res?.data?.data ?? res?.data?.items ?? res?.data ?? res?.items ?? res;
+      return Array.isArray(d) ? d : [];
+    },
     enabled: !!id,
   });
 
   if (isLoading) return <PageLoader />;
   if (!product) return <p className="section-y section text-center">Product not found.</p>;
 
-  const allImages = [product.main_image, ...(product.images ?? [])].filter(Boolean);
+  const allImages = [product.main_image ?? product.image, ...(product.images ?? [])].filter(Boolean);
   const price = product.discount_price ?? product.price;
   const mrp = product.price;
   const off = product.discount_percentage ?? (mrp && price < mrp ? Math.round((1 - price / mrp) * 100) : 0);
@@ -138,7 +140,38 @@ export default function ProductDetail() {
                   Add to Cart
                 </Button>
               </div>
-              {/* <Button variant="outline" fullWidth className="mt-3">Buy Now</Button> */}
+
+              {/* Combo included products — shown below Add to Cart */}
+              {type === "combo" && product.products?.length > 0 && (
+                <div className="mt-6">
+                  <p className="mb-3 text-sm font-semibold text-ink-700">Items included in this combo:</p>
+                  <div className="space-y-2">
+                    {product.products.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => navigate(`/shop/product/${p.id}`)}
+                        className="flex w-full items-center gap-3 rounded-xl border border-ink-500/10 p-2.5 text-left hover:border-primary-300 transition"
+                      >
+                        {(p.main_image || p.image) && (
+                          <img src={p.main_image ?? p.image} alt={p.name} className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium line-clamp-1">{p.name}</p>
+                          <div className="flex items-baseline gap-1.5 mt-0.5">
+                            <span className="text-sm font-bold text-primary-600">{formatINR(p.discount_price ?? p.price)}</span>
+                            {p.discount_price < p.price && (
+                              <span className="text-[11px] text-ink-500 line-through">{formatINR(p.price)}</span>
+                            )}
+                            {p.discount_percentage > 0 && (
+                              <span className="text-[11px] font-semibold text-success">{p.discount_percentage}% off</span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -238,21 +271,6 @@ export default function ProductDetail() {
             </div>
           </div>
 
-          {/* Combo included products */}
-          {product.products?.length > 0 && (
-            <div className="mt-10">
-              <h2 className="mb-4 text-xl font-bold">Included in this Combo</h2>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                {product.products.map((p, i) => (
-                  <div key={i} className="card text-center">
-                    {p.image && <img src={p.image} alt={p.name} className="mx-auto mb-2 h-16 w-16 rounded-lg object-cover" />}
-                    <p className="text-sm font-medium">{p.name}</p>
-                    {p.price && <p className="text-xs text-primary-600 font-semibold">{formatINR(p.price)}</p>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* You may also like */}
           {related.length > 0 && (

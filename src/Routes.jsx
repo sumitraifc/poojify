@@ -1,5 +1,11 @@
-import { lazy, Suspense } from "react";
-import { Routes, Route } from "react-router-dom";
+import { lazy, Suspense, useEffect } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
 import MainLayout from "./components/layout/MainLayout";
 import { PageLoader } from "./components/common/Loader";
 import PrivateRoute from "./components/common/PrivateRoute";
@@ -37,17 +43,18 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 export default function AppRoutes() {
   return (
     <Suspense fallback={<PageLoader />}>
+      <ScrollToTop />
       <Routes>
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />
 
           <Route path="/shop" element={<Shop />} />
           <Route path="/search" element={<Search />} />
-          <Route path="/shop/product/:id" element={<ProductDetail />} />
+          <Route path="/shop/product/:id" element={<ProductDetail type="product" />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<PrivateRoute><Checkout /></PrivateRoute>} />
           <Route path="/combo-offers" element={<ComboOffersPage />} />
-          <Route path="/combo-offers/:id" element={<ProductDetail />} />
+          <Route path="/combo-offers/:id" element={<ProductDetail type="combo" />} />
 
           <Route path="/purohit-booking" element={<PurohitBooking />} />
           <Route path="/purohit-booking/:id" element={<PurohitDetail />} />

@@ -21,10 +21,13 @@ export default function ProfileDrawer({ open, onClose }) {
     queryFn: getProfile,
     enabled: !!useAuthStore.getState().token,
     select: (res) => res?.data ?? res,
+    retry: false,
   });
 
   const pandit = profileData?.pandit ?? null;
-  const approvalStatus = pandit?.approval_status;
+  const approvalStatus = pandit ? Number(pandit.approval_status) : null;
+  const displayName = profileData?.user?.name || user?.name || "Devotee";
+  const displayPhone = profileData?.user?.mobile || user?.mobile || user?.phone || "";
 
   function go(to) {
     onClose();
@@ -63,8 +66,8 @@ export default function ProfileDrawer({ open, onClose }) {
               <User size={22} />
             </span>
             <div>
-              <p className="font-semibold">Hello, {user?.name || "Devotee"} 🙏</p>
-              <p className="text-sm text-ink-500">{user?.mobile || user?.phone || ""}</p>
+              <p className="font-semibold">Hello, {displayName} 🙏</p>
+              <p className="text-sm text-ink-500">{displayPhone}</p>
             </div>
           </div>
           <button onClick={() => go("/profile/edit")} className="flex h-8 w-8 items-center justify-center rounded-full border border-ink-500/15 hover:bg-cream-200">

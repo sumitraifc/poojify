@@ -40,8 +40,8 @@ export default function PanditDashboard() {
     <PageTransition>
       <div className="section-y">
         <div className="section">
-          <Breadcrumb items={[{ label: "Home", to: "/" }, { label: "Pandit Dashboard" }]} />
-          <h1 className="mb-1 text-2xl font-bold">Pandit Dashboard</h1>
+          <Breadcrumb items={[{ label: "Home", to: "/" }, { label: "Purohit Dashboard" }]} />
+          <h1 className="mb-1 text-2xl font-bold">Purohit Dashboard</h1>
           <p className="mb-6 text-sm text-ink-500">Manage your bookings, wallet and bank account.</p>
 
           {/* Tabs */}

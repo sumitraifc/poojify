@@ -224,10 +224,10 @@ export default function Checkout() {
                   })}
                 </div>
                 )}
-                <div className="mt-4">
+                {/* <div className="mt-4">
                   <label className="label">Delivery Instructions (Optional)</label>
                   <textarea className="input" rows={2} placeholder="E.g. Please leave the package at the door." />
-                </div>
+                </div> */}
               </div>
 
               {/* Payment */}

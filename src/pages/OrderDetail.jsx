@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Download, CheckCircle2, Circle, Star, XCircle } from "lucide-react";
+import { CheckCircle2, Circle, Star, XCircle } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
 import Button from "../components/common/Button";
 import { PageLoader } from "../components/common/Loader";
+import ReviewModal from "../components/common/ReviewModal";
 import { getOrderHistory, cancelOrder } from "../api/orderApi";
 import { formatINR } from "../utils/format";
 import { showToast } from "../components/common/Toast";
@@ -14,10 +15,11 @@ const timelineSteps = ["Order Placed", "Confirmed", "Shipped", "Delivered"];
 
 export default function OrderDetail() {
   const { id } = useParams();
-  const [rating, setRating] = useState(5);
-  const [review, setReview] = useState("");
+  const navigate = useNavigate();
   const [cancelReason, setCancelReason] = useState("");
   const [showCancelBox, setShowCancelBox] = useState(false);
+  const [reviewModal, setReviewModal] = useState(null); // item object
+  const [submitted, setSubmitted] = useState({}); // { item_id: true }
 
   const cancelMutation = useMutation({
     mutationFn: ({ order_id, reason }) => cancelOrder(order_id, reason),
@@ -44,6 +46,7 @@ export default function OrderDetail() {
   const items = Array.isArray(order.items) ? order.items : [];
   const status = (order.status ?? "").toLowerCase();
   const currentStepIndex = ["pending", "confirmed", "shipped", "delivered"].indexOf(status);
+
   return (
     <PageTransition>
       <div className="section-y">
@@ -55,7 +58,6 @@ export default function OrderDetail() {
               <h1 className="text-2xl font-bold">Order Details</h1>
               <p className="text-sm text-ink-500">Order ID: #{order.order_id ?? id} · Placed on {new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
             </div>
-            {/* <button className="btn-outline btn-sm"><Download size={14} /> Download Invoice</button> */}
           </div>
 
           {/* Timeline */}
@@ -67,7 +69,10 @@ export default function OrderDetail() {
                   <div key={step} className="flex items-center gap-2">
                     {done ? <CheckCircle2 size={18} className="text-success" /> : <Circle size={18} className="text-ink-500/30" />}
                     <span className={done ? "text-sm font-medium" : "text-sm text-ink-500"}>{step}</span>
-                    {i < timelineSteps.length - 1 && <span className="mx-2 h-px w-8 bg-ink-500/15 sm:w-16" />}
+                    {/* {i < timelineSteps.length - 1 && <span className="mx-2 h-px w-8 bg-ink-500/15 sm:w-16" />} */}
+                   {i < timelineSteps.length - 1 && (
+            <div className="mx-3 h-px flex-1 bg-ink-500 " />
+          )}
                   </div>
                 );
               })}
@@ -107,26 +112,50 @@ export default function OrderDetail() {
               </div>
             </div>
 
-            {/* Items */}
+            {/* Items — each with its own review button */}
             <div className="card lg:col-span-2">
               <h3 className="mb-3 font-semibold">Ordered Items ({items.length})</h3>
               <div className="space-y-3">
-                {items.map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 rounded-xl border border-ink-500/10 p-3">
-                    {item.main_image && <img src={item.main_image} alt={item.name} className="h-16 w-16 shrink-0 rounded-lg object-cover" />}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium line-clamp-2">{item.name}</p>
-                      <p className="text-xs text-ink-500 capitalize">Type: {item.type}</p>
-                      <p className="text-xs text-ink-500">Qty: {item.quantity}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="font-semibold text-primary-600">{formatINR(item.discount_price)}</p>
-                      {Number(item.price) > Number(item.discount_price) && (
-                        <p className="text-xs text-ink-500 line-through">{formatINR(item.price)}</p>
+                {items.map((item, i) => {
+                  const done = submitted[item.item_id];
+                  return (
+                    <div key={i} className="flex items-center gap-3 rounded-xl border border-ink-500/10 p-3">
+                      {item.main_image && (
+                        <button onClick={() => navigate(item.type === "combo" ? `/combo-offers/${item.item_id}` : `/shop/product/${item.item_id}`)} className="shrink-0">
+                          <img src={item.main_image} alt={item.name} className="h-16 w-16 rounded-lg object-cover hover:opacity-80 transition" />
+                        </button>
                       )}
+                      <div className="flex-1 min-w-0">
+                        <button onClick={() => navigate(item.type === "combo" ? `/combo-offers/${item.item_id}` : `/shop/product/${item.item_id}`)} className="text-left hover:text-primary-600">
+                          <p className="font-medium line-clamp-2">{item.name}</p>
+                        </button>
+                        <p className="text-xs text-ink-500 capitalize">Type: {item.type}</p>
+                        <p className="text-xs text-ink-500">Qty: {item.quantity}</p>
+                        {/* Per-item review button */}
+                        {status === "delivered" && (
+                          <button
+                            disabled={done}
+                            onClick={() => !done && setReviewModal(item)}
+                            className={`mt-1.5 flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition ${
+                              done
+                                ? "bg-green-50 text-green-600 cursor-default"
+                                : "bg-primary-50 text-primary-600 hover:bg-primary-100"
+                            }`}
+                          >
+                            <Star size={11} className={done ? "fill-green-500 text-green-500" : "text-primary-500"} />
+                            {done ? "Reviewed" : "Write a Review"}
+                          </button>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-semibold text-primary-600">{formatINR(item.discount_price)}</p>
+                        {Number(item.price) > Number(item.discount_price) && (
+                          <p className="text-xs text-ink-500 line-through">{formatINR(item.price)}</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -168,24 +197,20 @@ export default function OrderDetail() {
               )}
             </div>
           )}
-
-          {/* Rate & Review */}
-          {status === "delivered" && (
-            <div className="card mt-6">
-              <h3 className="mb-3 flex items-center gap-2 font-semibold"><Star size={16} className="text-primary-500" /> Rate & Review</h3>
-              <div className="mb-3 flex gap-1">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <button key={n} onClick={() => setRating(n)}>
-                    <Star size={22} className={n <= rating ? "fill-primary-500 text-primary-500" : "text-ink-500/20"} />
-                  </button>
-                ))}
-              </div>
-              <textarea value={review} onChange={(e) => setReview(e.target.value)} className="input" rows={3} placeholder="Share your experience (optional)" />
-              <Button className="mt-3" onClick={() => showToast.success("Thank you! Your feedback helps us improve.")}>Submit Review</Button>
-            </div>
-          )}
         </div>
       </div>
+
+      {reviewModal && (
+        <ReviewModal
+          order_id={order.order_id ?? id}
+          item={reviewModal}
+          onClose={() => setReviewModal(null)}
+          onSuccess={() => {
+            setSubmitted((prev) => ({ ...prev, [reviewModal.item_id]: true }));
+            setReviewModal(null);
+          }}
+        />
+      )}
     </PageTransition>
   );
 }
