@@ -108,9 +108,20 @@ export default function MyBookings() {
                       <tr key={b.id} className="border-t border-ink-500/10">
                         <td className="p-4">
                           <div className="flex items-center gap-3">
-                            <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-yellow-400 bg-yellow-50 text-lg font-bold text-yellow-600">
+                            {/* <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-yellow-400 bg-yellow-50 text-lg font-bold text-yellow-600">
                               {b.pandit?.name?.charAt(0)?.toUpperCase() ?? "P"}
-                            </span>
+                            </span> */}
+                            <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-yellow-400 bg-yellow-50 text-lg font-bold text-yellow-600">
+  {b.pandit?.profile_image ? (
+    <img
+      src={b.pandit.profile_image}
+      alt={b.pandit?.name || "Pandit"}
+      className="h-full w-full object-cover"
+    />
+  ) : (
+    b.pandit?.name?.charAt(0)?.toUpperCase() ?? "P"
+  )}
+</span>
                             <div>
                               <p className="font-medium">{b.pandit?.name ?? "—"}</p>
                               <p className="text-xs text-ink-500">{b.pandit?.experience} yrs exp</p>
@@ -140,7 +151,7 @@ export default function MyBookings() {
                         <td className="p-4">
                           <div className="flex flex-col gap-1.5">
                             {/* <Link to={`/my-bookings/${b.id}`} className="btn-outline btn-sm"><Eye size={13} /> View</Link> */}
-                            {b.status !== 2 && b.status !== 3 && (
+                            {b.status !== 2 && b.status !== 1 && (
                               <button onClick={() => { setReason(""); setCancelId(b.id); }} className="btn-sm flex items-center gap-1 rounded-lg border border-red-300 bg-red-50 px-3 text-xs font-semibold text-red-600 hover:bg-red-100 transition">
                                 <XCircle size={12} /> Cancel
                               </button>

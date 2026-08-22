@@ -17,6 +17,8 @@ export default function ReviewModal({ order_id, item, onClose, onSuccess }) {
       fd.append("order_id", String(order_id));
       fd.append("rating", String(rating));
       fd.append("review_text", reviewText);
+      if (item.type === "combo") fd.append("combo_id", String(item.item_id ?? item.id));
+      else fd.append("product_id", String(item.item_id ?? item.id));
       images.forEach((f) => fd.append("images", f));
       return submitReview(fd);
     },

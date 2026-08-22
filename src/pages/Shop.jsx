@@ -15,6 +15,7 @@ export default function Shop() {
   const [activeSub, setActiveSub] = useState(null);
   const [view, setView] = useState("grid");
   const [sort, setSort] = useState("popularity");
+  const [page, setPage] = useState(1);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -34,15 +35,21 @@ export default function Shop() {
   }, [categories]);
 
   useEffect(() => {
-    if (subCategories.length > 0) setActiveSub(subCategories[0].id);
+    if (subCategories.length > 0) { setActiveSub(subCategories[0].id); setPage(1); }
   }, [subCategories]);
 
-  const { data: products = [], isLoading: productsLoading } = useQuery({
-    queryKey: ["products-by-sub", activeSub],
-    queryFn: () => getProductsBySub(activeSub, { limit: 50, offset: 0 }),
-    select: (res) => res?.data ?? [],
+  const ITEMS_PER_PAGE = 12;
+
+  const { data: productsRes, isLoading: productsLoading } = useQuery({
+    queryKey: ["products-by-sub", activeSub, page],
+    queryFn: () => getProductsBySub(activeSub, { limit: ITEMS_PER_PAGE, offset: (page - 1) * ITEMS_PER_PAGE }),
     enabled: !!activeSub,
+    keepPreviousData: true,
   });
+
+  const products = productsRes?.data ?? [];
+  const totalCount = productsRes?.total_products ?? 0;
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   const sorted = useMemo(() => {
     const list = [...products];
@@ -52,9 +59,15 @@ export default function Shop() {
     return list;
   }, [products, sort]);
 
+  function goToPage(p) {
+    setPage(p);
+    document.getElementById("shop-products")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function selectCategory(id) {
     setActiveCat(id);
     setActiveSub(null);
+    setPage(1);
   }
 
   function normalize(p) {
@@ -156,9 +169,51 @@ export default function Shop() {
               ) : sorted.length === 0 ? (
                 <EmptyState icon={PackageSearch} title="No products found" subtitle="No products in this subcategory yet." />
               ) : (
-                <div className={cn("grid gap-1 sm:gap-3", view === "grid" ? "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1")}>
-                  {sorted.map((p, i) => <ProductCard key={p.id} product={normalize(p)} index={i} />)}
-                </div>
+                <>
+                  <div id="shop-products" className={cn("grid gap-1 sm:gap-3", view === "grid" ? "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1")}>
+                    {sorted.map((p, i) => <ProductCard key={p.id} product={normalize(p)} index={i} />)}
+                  </div>
+
+                  {totalPages > 1 && (
+                    <div className="mt-6 flex items-center justify-center gap-1.5">
+                      <button
+                        onClick={() => goToPage(page - 1)}
+                        disabled={page === 1}
+                        className="rounded-lg border border-ink-500/15 px-3 py-1.5 text-xs font-medium text-ink-600 hover:border-primary-400 hover:text-primary-600 disabled:opacity-40 transition"
+                      >← Prev</button>
+
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter((n) => n === 1 || n === totalPages || Math.abs(n - page) <= 1)
+                        .reduce((acc, n, idx, arr) => {
+                          if (idx > 0 && n - arr[idx - 1] > 1) acc.push("...");
+                          acc.push(n);
+                          return acc;
+                        }, [])
+                        .map((n, i) =>
+                          n === "..." ? (
+                            <span key={`dot-${i}`} className="px-1 text-xs text-ink-400">...</span>
+                          ) : (
+                            <button
+                              key={n}
+                              onClick={() => goToPage(n)}
+                              className={cn(
+                                "h-8 w-8 rounded-lg text-xs font-medium transition",
+                                page === n
+                                  ? "bg-primary-500 text-white"
+                                  : "border border-ink-500/15 text-ink-600 hover:border-primary-400 hover:text-primary-600"
+                              )}
+                            >{n}</button>
+                          )
+                        )}
+
+                      <button
+                        onClick={() => goToPage(page + 1)}
+                        disabled={page === totalPages}
+                        className="rounded-lg border border-ink-500/15 px-3 py-1.5 text-xs font-medium text-ink-600 hover:border-primary-400 hover:text-primary-600 disabled:opacity-40 transition"
+                      >Next →</button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

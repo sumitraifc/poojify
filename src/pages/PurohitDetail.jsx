@@ -16,7 +16,7 @@ export default function PurohitDetail() {
   const navigate = useNavigate();
   const [date, setDate] = useState("");
   const [selected, setSelected] = useState([]);
-
+const [selectedPoojaImage, setSelectedPoojaImage] = useState(null);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const { data: purohit, isLoading } = useQuery({
@@ -83,7 +83,7 @@ export default function PurohitDetail() {
                   <h3 className="mb-3 flex items-center gap-2 font-semibold"><Image size={15} className="text-primary-500" /> Pooja Gallery</h3>
                   <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                     {purohit.pooja_images.map((img, i) => (
-                      <img key={i} src={img} alt={`pooja-${i}`} className="h-24 w-24 shrink-0 rounded-lg object-cover border-2 border-primary-600 " />
+                      <img key={i} src={img} alt={`pooja-${i}`}     onClick={() => setSelectedPoojaImage(img)} className="h-24 w-24 shrink-0 rounded-lg object-cover border-2 border-primary-600 " />
                     ))}
                   </div>
                 </div>
@@ -168,6 +168,18 @@ export default function PurohitDetail() {
           </div>
         </div>
       </div>
+      {selectedPoojaImage && (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+    onClick={() => setSelectedPoojaImage(null)}
+  >
+    <img
+      src={selectedPoojaImage}
+      alt="Pooja"
+      className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain"
+    />
+  </div>
+)}
     </PageTransition>
   );
 }

@@ -132,7 +132,11 @@ export default function PurohitBooking() {
 function PurohitCard({ purohit }) {
   const startingPrice = purohit.specializations?.[0]?.price ?? null;
   return (
-    <div className="card flex flex-col gap-4 sm:flex-row sm:items-center">
+    // <div className="card flex flex-col gap-4 sm:flex-row sm:items-center">
+      <Link
+  to={`/purohit-booking/${purohit.id}`}
+  className="card flex flex-col gap-4 sm:flex-row sm:items-center cursor-pointer"
+>
       {purohit.profile_image ? (
         <img src={purohit.profile_image} alt={purohit.full_name} className="h-24 w-24 shrink-0 rounded-full object-cover border-2 border-yellow-400" />
       ) : (
@@ -162,8 +166,9 @@ function PurohitCard({ purohit }) {
             <p className="text-lg font-bold text-primary-600">{formatINR(startingPrice)}</p>
           </>
         )}
-        <Link to={`/purohit-booking/${purohit.id}`} className="btn-outline btn-sm mt-2">View Details</Link>
+        <span className="btn-outline btn-sm mt-2">View Details</span>
       </div>
-    </div>
+    </Link>
+    
   );
 }

@@ -64,6 +64,11 @@ export default function ProductDetail({ type = "product" }) {
     },
     enabled: !!id,
   });
+ const [lightboxIndex, setLightboxIndex] = useState(null);
+
+  const photos = (product?.reviews ?? [])
+    .flatMap((r) => r.photos ?? r.images ?? [])
+    .filter(Boolean);
 
   if (isLoading) return <PageLoader />;
   if (!product) return <p className="section-y section text-center">Product not found.</p>;
@@ -195,7 +200,7 @@ export default function ProductDetail({ type = "product" }) {
                   </div>
                 </div>
                 {/* Breakdown bars — 5★ to 1★ */}
-                <div className="mt-4 space-y-1.5">
+                <div className="mt-4 space-y-4">
                   {[5,4,3,2,1].map((star) => {
                     const count = product.reviews?.filter((r) => Math.round(r.rating) === star).length ?? 0;
                     const total = product.reviews?.length || 1;
@@ -214,7 +219,7 @@ export default function ProductDetail({ type = "product" }) {
               </div>
 
               {/* Customer Photos */}
-              <div className="card">
+              {/* <div className="card">
                 <h3 className="mb-4 font-semibold">Customer Photos</h3>
                 {(() => {
                   const photos = (product.reviews ?? []).flatMap((r) => r.photos ?? r.images ?? []).filter(Boolean);
@@ -228,7 +233,113 @@ export default function ProductDetail({ type = "product" }) {
                     <p className="text-sm text-ink-500">No photos yet.</p>
                   );
                 })()}
+              </div> */}
+     
+    <div className="card">
+      <h3 className="mb-4 font-semibold">Customer Photos</h3>
+
+      {photos.length > 0 ? (
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            {photos.slice(0, 4).map((p, i) => {
+              const remaining = photos.length - 4;
+
+              return (
+                <div
+                  key={i}
+                  className="relative aspect-square overflow-hidden rounded-lg cursor-pointer"
+                  onClick={() => setLightboxIndex(i)}
+                >
+                  <img
+                    src={p}
+                    alt={`Customer photo ${i + 1}`}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+
+                  {/* 4th image par +N */}
+                  {i === 3 && remaining > 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-xl font-bold text-white">
+                      +{remaining}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Lightbox modal */}
+          {lightboxIndex !== null && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+              onClick={() => setLightboxIndex(null)}
+            >
+              <div
+                className="relative max-h-full max-w-3xl w-full"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Close button */}
+                <button
+                  className="absolute -top-10 right-0 text-white text-2xl font-bold"
+                  onClick={() => setLightboxIndex(null)}
+                >
+                  ✕
+                </button>
+
+                {/* Main image */}
+                <img
+                  src={photos[lightboxIndex]}
+                  alt={`Customer photo ${lightboxIndex + 1}`}
+                  className="max-h-[70vh] w-full rounded-lg object-contain mx-auto"
+                />
+
+                {/* Prev / Next */}
+                {photos.length > 1 && (
+                  <>
+                    <button
+                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 px-3 py-2 text-white"
+                      onClick={() =>
+                        setLightboxIndex(
+                          (lightboxIndex - 1 + photos.length) % photos.length
+                        )
+                      }
+                    >
+                      ‹
+                    </button>
+                    <button
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 px-3 py-2 text-white"
+                      onClick={() =>
+                        setLightboxIndex((lightboxIndex + 1) % photos.length)
+                      }
+                    >
+                      ›
+                    </button>
+                  </>
+                )}
+
+                {/* Thumbnail strip - saare photos yahan dikhenge */}
+                <div className="mt-3 flex gap-2 overflow-x-auto">
+                  {photos.map((p, i) => (
+                    <img
+                      key={i}
+                      src={p}
+                      alt={`thumb ${i + 1}`}
+                      onClick={() => setLightboxIndex(i)}
+                      className={`h-14 w-14 flex-shrink-0 cursor-pointer rounded-md object-cover ${
+                        i === lightboxIndex ? "ring-2 ring-white" : "opacity-70"
+                      }`}
+                    />
+                  ))}
+                </div>
               </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <p className="text-sm text-ink-500">No photos yet.</p>
+      )}
+    </div>
+
 
               {/* Customer Reviews */}
               <div className="card">

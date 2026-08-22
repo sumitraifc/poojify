@@ -79,11 +79,12 @@ export default function Cart() {
   const items = (Array.isArray(data) ? data : []).map((i) => ({
     id: i.item_id,
     name: i.name,
-    image: i.main_image,
+    image: i.main_image ?? i.products?.[0]?.main_image ?? null,
     price: Number(i.discount_price ?? i.price ?? 0),
     mrp: Number(i.price ?? 0),
     qty: Number(i.quantity ?? 1),
     type: i.type ?? "product",
+    products: i.products ?? null,
   }));
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
@@ -149,10 +150,25 @@ export default function Cart() {
                         >
                           <td className="p-4">
                             <div className="flex items-center gap-3">
-                              <img src={item.image} alt={item.name} className="h-16 w-16 rounded-lg object-cover" />
+                              {item.image
+                                ? <img src={item.image} alt={item.name} className="h-16 w-16 shrink-0 rounded-lg object-cover" />
+                                : <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-cream-100 text-xs text-ink-400">Combo</div>
+                              }
                               <div>
-                                <Link to={`/shop/product/${item.id}`} className="font-medium hover:text-primary-600">{item.name}</Link>
-                                <p className="text-xs text-ink-500">Delivery in 2-3 days</p>
+                                <Link
+                                  to={item.type === "combo" ? `/combo-offers/${item.id}` : `/shop/product/${item.id}`}
+                                  className="font-medium hover:text-primary-600"
+                                >
+                                  {item.name}
+                                </Link>
+                                {item.type === "combo" && item.products?.length > 0 && (
+                                  <div className="mt-1 space-y-0.5">
+                                    {item.products.map((p) => (
+                                      <p key={p.id} className="text-[11px] text-ink-500 leading-snug">• {p.name.trim()}</p>
+                                    ))}
+                                  </div>
+                                )}
+                                {item.type !== "combo" && <p className="text-xs text-ink-500">Delivery in 2-3 days</p>}
                               </div>
                             </div>
                           </td>
@@ -190,7 +206,10 @@ export default function Cart() {
                       >
                         {/* Product name on top */}
                         <div className="mb-2 flex items-start justify-between gap-2">
-                          <Link to={`/shop/product/${item.id}`} className="text-sm font-semibold leading-snug hover:text-primary-600">
+                          <Link
+                            to={item.type === "combo" ? `/combo-offers/${item.id}` : `/shop/product/${item.id}`}
+                            className="text-sm font-semibold leading-snug hover:text-primary-600"
+                          >
                             {item.name}
                           </Link>
                           <button onClick={() => handleRemove(item)} aria-label="Remove" className="shrink-0 text-ink-400 hover:text-danger">
@@ -199,9 +218,15 @@ export default function Cart() {
                         </div>
                         {/* Image + price/qty row */}
                         <div className="flex items-center gap-3">
-                          <img src={item.image} alt={item.name} className="h-20 w-20 shrink-0 rounded-lg object-cover" />
+                          {item.image
+                            ? <img src={item.image} alt={item.name} className="h-20 w-20 shrink-0 rounded-lg object-cover" />
+                            : <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-cream-100 text-xs text-ink-400">Combo</div>
+                          }
                           <div className="flex flex-1 flex-col gap-2">
-                            <p className="text-xs text-ink-500">Delivery in 2-3 days</p>
+                            {item.type === "combo" && item.products?.length > 0
+                              ? <div className="space-y-0.5">{item.products.map((p) => <p key={p.id} className="text-[11px] text-ink-500 leading-snug">• {p.name.trim()}</p>)}</div>
+                              : <p className="text-xs text-ink-500">Delivery in 2-3 days</p>
+                            }
                             <div className="flex items-center gap-3">
                               <QuantityStepper value={item.qty} onChange={(v) => handleQtyChange(item, v)} />
                               <div className="flex items-center gap-1.5">

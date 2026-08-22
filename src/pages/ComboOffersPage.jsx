@@ -29,7 +29,12 @@ export default function ComboOffersPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {combos.map((combo) => (
-                <div key={combo.id} className="card relative overflow-hidden">
+              
+                    <Link
+                key={combo.id}
+                to={`/combo-offers/${combo.id}`}
+                className="card relative block overflow-hidden transition hover:shadow-md"
+              >
                   {combo.off && (
                     <span className="absolute left-3 top-3 badge bg-primary-500 text-white">{combo.off}% OFF</span>
                   )}
@@ -42,8 +47,9 @@ export default function ComboOffersPage() {
                       <span className="text-xs text-ink-500 line-through">{formatINR(combo.price)}</span>
                     )}
                   </div>
-                  <Link to={`/combo-offers/${combo.id}`} className="btn-outline btn-sm mt-3 w-full">View Details</Link>
-                </div>
+                  <div className="btn-outline btn-sm mt-3 w-full">View Details</div>
+                </Link>
+              
               ))}
             </div>
           )}

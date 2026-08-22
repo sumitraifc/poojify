@@ -1,8 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { GoogleMap, useJsApiLoader, Marker, StandaloneSearchBox } from "@react-google-maps/api";
-import { Camera, Image as ImageIcon, MapPin, LocateFixed, Search, ShieldCheck, Lock, Wallet, Headset } from "lucide-react";
+import { GoogleMap, useJsApiLoader, OverlayView } from "@react-google-maps/api";
+import { Camera, Image as ImageIcon, MapPin, LocateFixed, Search, ShieldCheck, Lock, Wallet, Headset, CheckCircle2 } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
 import Button from "../components/common/Button";
@@ -32,12 +32,23 @@ export default function PurohitRegister() {
   const { latitude: storeLat, longitude: storeLng, setCoords } = useLocationStore();
   const profileRef = useRef(null);
   const poojaImagesRef = useRef(null);
-  const searchBoxRef = useRef(null);
+  const mapRef = useRef(null);
+  const placesServiceRef = useRef(null);
+  const debounceTimerRef = useRef(null);
 
   const [mapCenter, setMapCenter] = useState({ lat: storeLat ?? 26.8467, lng: storeLng ?? 80.9462 });
   const [markerPos, setMarkerPos] = useState(storeLat ? { lat: storeLat, lng: storeLng } : null);
   const [lat, setLat] = useState(storeLat ?? "");
   const [lng, setLng] = useState(storeLng ?? "");
+  const [detectedAddress, setDetectedAddress] = useState(null);
+  const [geocoding, setGeocoding] = useState(false);
+  const [locating, setLocating] = useState(false);
+
+  const [textQuery, setTextQuery] = useState("");
+  const [textResults, setTextResults] = useState([]);
+  const [loadingTextSearch, setLoadingTextSearch] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [nearbyPlaces, setNearbyPlaces] = useState([]);
 
   const { isLoaded } = useJsApiLoader({ googleMapsApiKey: MAP_KEY, libraries: LIBRARIES });
 
@@ -68,65 +79,140 @@ export default function PurohitRegister() {
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
+  // auto-detect on mount
+  useEffect(() => {
+    if (storeLat) return; // already have location
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => pinLocation(pos.coords.latitude, pos.coords.longitude),
+      () => pinLocation(26.8467, 80.9462),
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }, []);
+
+  // debounced text search
+  useEffect(() => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    if (!textQuery.trim() || textQuery.trim().length < 3) {
+      setTextResults([]); setShowSuggestions(false); return;
+    }
+    debounceTimerRef.current = setTimeout(() => performTextSearch(textQuery), 500);
+    return () => clearTimeout(debounceTimerRef.current);
+  }, [textQuery]);
+
+  // nearby on marker change
+  useEffect(() => {
+    if (markerPos && placesServiceRef.current) fetchNearbyPlaces(markerPos.lat, markerPos.lng);
+  }, [markerPos]);
+
+  function onMapLoad(map) {
+    mapRef.current = map;
+    if (window.google?.maps?.places)
+      placesServiceRef.current = new window.google.maps.places.PlacesService(map);
+  }
+
   async function reverseGeocode(lt, ln) {
+    setGeocoding(true);
     try {
-      const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lt},${ln}&key=${MAP_KEY}`);
+      const res = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lt},${ln}&key=${MAP_KEY}&language=en&region=IN`
+      );
       const data = await res.json();
       if (data.results?.[0]) {
         const c = data.results[0].address_components;
         const get = (type) => c.find((x) => x.types.includes(type))?.long_name || "";
-        const city = get("locality") || get("administrative_area_level_2");
-        const pincode = get("postal_code");
-        const state = get("administrative_area_level_1");
-        const sublocality = get("sublocality_level_1") || get("sublocality");
-        const route = get("route");
-        const streetNo = get("street_number");
-        const house_no = [streetNo, route].filter(Boolean).join(", ");
-        const area = sublocality;
-        setForm((f) => ({ ...f, city, pincode, state, area, house_no }));
+        const city     = get("locality") || get("administrative_area_level_2");
+        const pincode  = get("postal_code");
+        const state    = get("administrative_area_level_1");
+        const house_no = [get("subpremise"), get("premise"), get("street_number"), get("route"), get("sublocality_level_2"), get("sublocality_level_1") || get("sublocality")].filter(Boolean).join(", ");
+        const area     = get("sublocality_level_1") || get("sublocality") || get("sublocality_level_2");
+        const detected = { house_no, area, city, state, pincode };
+        setDetectedAddress(detected);
+        setCoords(lt, ln);
+        setForm((f) => ({ ...f, house_no, area, city: city || f.city, state: state || f.state, pincode: pincode || f.pincode }));
+        return detected;
       }
     } catch {}
+    finally { setGeocoding(false); }
   }
 
-  function onMapClick(e) {
-    const lt = e.latLng.lat();
-    const ln = e.latLng.lng();
-    setMarkerPos({ lat: lt, lng: ln });
-    setMapCenter({ lat: lt, lng: ln });
-    setLat(lt); setLng(ln);
-    setCoords(lt, ln);
-    reverseGeocode(lt, ln);
+  function performTextSearch(query) {
+    if (!placesServiceRef.current || !window.google) return;
+    setLoadingTextSearch(true);
+    placesServiceRef.current.textSearch({ query }, (results, status) => {
+      setLoadingTextSearch(false);
+      if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
+        setTextResults(results.slice(0, 5));
+        setShowSuggestions(true);
+      } else {
+        setTextResults([]); setShowSuggestions(false);
+      }
+    });
   }
 
-  function locateMe() {
-    if (!navigator.geolocation) return showToast.error("Location not supported");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lt = pos.coords.latitude;
-        const ln = pos.coords.longitude;
-        setMarkerPos({ lat: lt, lng: ln });
-        setMapCenter({ lat: lt, lng: ln });
-        setLat(lt); setLng(ln);
-        setCoords(lt, ln);
-        reverseGeocode(lt, ln);
-        showToast.success("Location detected");
-      },
-      () => showToast.error("Couldn't access location"),
-      { enableHighAccuracy: true, timeout: 8000 }
+  function fetchNearbyPlaces(lt, ln) {
+    if (!placesServiceRef.current || !window.google) return;
+    placesServiceRef.current.nearbySearch(
+      { location: new window.google.maps.LatLng(lt, ln), radius: 500 },
+      (results, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && results)
+          setNearbyPlaces(results.slice(0, 5));
+        else setNearbyPlaces([]);
+      }
     );
   }
 
-  function onPlacesChanged() {
-    const places = searchBoxRef.current?.getPlaces();
-    if (!places?.length) return;
-    const place = places[0];
+  function handlePickTextResult(place) {
     const lt = place.geometry.location.lat();
     const ln = place.geometry.location.lng();
-    setMapCenter({ lat: lt, lng: ln });
+    setTextQuery(place.formatted_address || place.name || "");
+    setTextResults([]);
+    setShowSuggestions(false);
+    pinLocation(lt, ln);
+    // fill from address_components if available
+    const c = place.address_components ?? [];
+    const get = (type) => c.find((x) => x.types.includes(type))?.long_name || "";
+    const city    = get("locality") || get("administrative_area_level_2");
+    const state   = get("administrative_area_level_1");
+    const pincode = get("postal_code");
+    const house_no = [get("subpremise"), get("premise"), get("street_number"), get("route"), get("sublocality_level_2"), get("sublocality_level_1") || get("sublocality")].filter(Boolean).join(", ");
+    const area    = get("sublocality_level_1") || get("sublocality") || get("sublocality_level_2");
+    if (city) setForm((f) => ({ ...f, house_no, area, city, state, pincode }));
+    // else reverseGeocode will fill via pinLocation
+  }
+
+  function handlePickNearbyPlace(place) {
+    const lt = place.geometry.location.lat();
+    const ln = place.geometry.location.lng();
+    pinLocation(lt, ln);
+  }
+
+  function pinLocation(lt, ln) {
     setMarkerPos({ lat: lt, lng: ln });
+    setMapCenter({ lat: lt, lng: ln });
     setLat(lt); setLng(ln);
     setCoords(lt, ln);
     reverseGeocode(lt, ln);
+  }
+
+  const onMarkerDragEnd = useCallback((e) => {
+    pinLocation(e.latLng.lat(), e.latLng.lng());
+  }, []);
+
+  function onMapClick(e) { pinLocation(e.latLng.lat(), e.latLng.lng()); }
+
+  function locateMe() {
+    if (!navigator.geolocation) return showToast.error("Location not supported");
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        pinLocation(pos.coords.latitude, pos.coords.longitude);
+        showToast.success("Location detected");
+        setLocating(false);
+      },
+      () => { showToast.error("Couldn't access location"); setLocating(false); },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
   }
 
   function toggleArr(key, id) {
@@ -284,36 +370,131 @@ export default function PurohitRegister() {
 
               {/* Address */}
               <FormCard step={3} title="Address & Location">
-                {/* Search + Locate */}
-                <div className="flex gap-2">
-                  {isLoaded && (
-                    <StandaloneSearchBox onLoad={(ref) => (searchBoxRef.current = ref)} onPlacesChanged={onPlacesChanged}>
-                      <div className="flex flex-1 items-center gap-2 overflow-hidden rounded-lg border border-ink-500/15 px-3 focus-within:border-primary-500">
-                        <Search size={14} className="shrink-0 text-ink-500" />
-                        <input type="text" placeholder="Search area, city..." className="w-full bg-transparent py-2 text-sm outline-none" />
-                      </div>
-                    </StandaloneSearchBox>
+                {/* Search box with debounce suggestions */}
+                <div className="relative">
+                  <div className="flex items-center gap-2 rounded-lg border border-ink-500/15 px-3 focus-within:border-primary-500">
+                    <Search size={14} className="shrink-0 text-ink-500" />
+                    <input
+                      type="text"
+                      value={textQuery}
+                      onChange={(e) => setTextQuery(e.target.value)}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                      placeholder="Search area, city, landmark..."
+                      className="w-full bg-transparent py-2 text-sm outline-none"
+                    />
+                    {loadingTextSearch && (
+                      <div className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
+                    )}
+                  </div>
+                  {showSuggestions && textResults.length > 0 && (
+                    <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-ink-500/10 bg-white shadow-md">
+                      {textResults.map((place) => (
+                        <button
+                          key={place.place_id}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => handlePickTextResult(place)}
+                          className="flex w-full items-start gap-2 border-b border-ink-500/5 px-3 py-2.5 text-left text-sm last:border-0 hover:bg-primary-50"
+                        >
+                          <MapPin size={13} className="mt-0.5 shrink-0 text-primary-500" />
+                          <span>
+                            <span className="font-medium text-ink-800">{place.name}</span>
+                            <span className="block text-[11px] text-ink-500">{place.formatted_address}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   )}
-                  <button type="button" onClick={locateMe}
-                    className="flex shrink-0 items-center gap-1.5 rounded-lg border border-primary-300 bg-primary-50 px-3 py-2 text-xs font-medium text-primary-600 hover:bg-primary-100">
-                    <LocateFixed size={14} /> Me
+                </div>
+
+                {/* Map with floating Locate Me */}
+                <div className="relative rounded-xl shadow-sm" style={{ overflow: "visible" }}>
+                  {isLoaded ? (
+                    <GoogleMap
+                      mapContainerStyle={{ width: "100%", height: "224px", borderRadius: "12px", overflow: "hidden" }}
+                      center={mapCenter} zoom={16}
+                      onClick={onMapClick}
+                      onLoad={onMapLoad}
+                      options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false, gestureHandling: "greedy" }}
+                    >
+                      {markerPos && (
+                        <OverlayView position={markerPos} mapPaneName={OverlayView.FLOAT_PANE}>
+                          <div style={{ transform: "translate(-50%, -100%)", cursor: "grab", pointerEvents: "auto", zIndex: 9999 }}
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                              const map = mapRef.current;
+                              if (!map) return;
+                              map.setOptions({ draggable: false });
+                              const mmListener = map.addListener("mousemove", (me) =>
+                                setMarkerPos({ lat: me.latLng.lat(), lng: me.latLng.lng() })
+                              );
+                              const muListener = map.addListener("mouseup", (me) => {
+                                map.setOptions({ draggable: true });
+                                window.google.maps.event.removeListener(mmListener);
+                                window.google.maps.event.removeListener(muListener);
+                                pinLocation(me.latLng.lat(), me.latLng.lng());
+                              });
+                            }}
+                          >
+                            <svg width="32" height="40" viewBox="0 0 32 40" fill="none">
+                              <path d="M16 0C7.163 0 0 7.163 0 16c0 10 16 24 16 24s16-14 16-24C32 7.163 24.837 0 16 0z" fill="#F5960F"/>
+                              <circle cx="16" cy="16" r="6" fill="white"/>
+                            </svg>
+                          </div>
+                        </OverlayView>
+                      )}
+                    </GoogleMap>
+                  ) : (
+                    <div className="flex h-56 items-center justify-center rounded-xl bg-cream-200 text-sm text-ink-500">Loading map...</div>
+                  )}
+                  <button type="button" onClick={locateMe} disabled={locating}
+                    className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-ink-700 shadow-lg hover:bg-primary-50 hover:text-primary-600 transition disabled:opacity-60" style={{ zIndex: 10 }}>
+                    <LocateFixed size={13} className={locating ? "animate-spin text-primary-500" : ""} />
+                    {locating ? "Detecting..." : "Locate Me"}
                   </button>
                 </div>
 
-                {/* Map */}
-                {isLoaded ? (
-                  <GoogleMap
-                    mapContainerClassName="w-full h-48 rounded-xl overflow-hidden"
-                    center={mapCenter} zoom={15} onClick={onMapClick}
-                    options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false }}
-                  >
-                    {markerPos && <Marker position={markerPos} />}
-                  </GoogleMap>
-                ) : (
-                  <div className="flex h-48 items-center justify-center rounded-xl bg-cream-200 text-sm text-ink-500">Loading map...</div>
+                {/* Detected address preview */}
+                {detectedAddress && (
+                  <div className="flex items-start justify-between gap-2 rounded-xl border border-primary-200 bg-primary-50 px-3 py-2.5">
+                    <div className="flex items-start gap-2">
+                      {geocoding
+                        ? <div className="mt-0.5 h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
+                        : <MapPin size={14} className="mt-0.5 shrink-0 text-primary-500" />}
+                      <p className="text-xs text-ink-700 leading-snug">
+                        {geocoding ? "Fetching address..." : [detectedAddress.house_no, detectedAddress.city, detectedAddress.state, detectedAddress.pincode].filter(Boolean).join(", ")}
+                      </p>
+                    </div>
+                    {!geocoding && (
+                      <button type="button"
+                        onClick={() => setForm((f) => ({ ...f, house_no: detectedAddress.house_no, area: detectedAddress.area, city: detectedAddress.city, state: detectedAddress.state, pincode: detectedAddress.pincode }))}
+                        className="shrink-0 flex items-center gap-1 rounded-lg bg-primary-500 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-primary-600 transition">
+                        <CheckCircle2 size={11} /> Use This
+                      </button>
+                    )}
+                  </div>
                 )}
 
-                <F label="House No / Street" value={form.house_no} onChange={set("house_no")} placeholder="House no, street" required />
+                {/* Nearby landmarks */}
+                {nearbyPlaces.length > 0 && (
+                  <div>
+                    <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-500">Nearby Landmarks</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {nearbyPlaces.map((place) => (
+                        <button key={place.place_id} type="button" onClick={() => handlePickNearbyPlace(place)}
+                          className="rounded-full border border-ink-500/15 bg-white px-2.5 py-1 text-[11px] text-ink-700 hover:border-primary-300 hover:bg-primary-50 transition">
+                          {place.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="label">House No / Street <span className="text-danger">*</span></label>
+                  <input value={form.house_no} onChange={set("house_no")} placeholder="House no, street" required className="input" />
+                  <p className="mt-1 text-xs text-ink-500">📍 Map se area detect hota hai — house/flat number manually verify karein</p>
+                </div>
                 <F label="Area" value={form.area} onChange={set("area")} placeholder="Area / locality" required />
                 <div className="grid grid-cols-2 gap-3">
                   <F label="City" value={form.city} onChange={set("city")} placeholder="City" required />

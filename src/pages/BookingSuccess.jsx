@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation, useParams, Link } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { CheckCircle2, Phone, MessageCircle, CalendarDays, PhoneCall, Flame, Bell, ShieldCheck, KeyRound, Loader2 } from "lucide-react";
+import { CheckCircle2, Phone, MessageCircle, CalendarDays, PhoneCall, Flame, Bell, ShieldCheck, KeyRound, Loader2, Inbox } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
 import Button from "../components/common/Button";
@@ -10,6 +10,7 @@ import { PageLoader } from "../components/common/Loader";
 import { formatINR, formatDate } from "../utils/format";
 import { showToast } from "../components/common/Toast";
 import { getBookingStatus, verifyBooking, cancelBooking } from "../api/panditApi";
+import { useSettingsStore } from "../store/settingsStore";
 
 const STATUS_MAP = {
   0: { label: "Pending",   cls: "bg-yellow-100 text-yellow-700" },
@@ -35,7 +36,17 @@ export default function BookingSuccess() {
   // bookingId from fresh booking flow OR from URL param
   const bookingId = state?.bookingId ?? id;
 
-  
+    const customerService = useSettingsStore((s) => s.customerService);
+  const phoneEntry = customerService.find((c) => c.type === "phone");
+  const emailEntry = customerService.find((c) => c.type === "email");
+  const whatsappEntry = customerService.find((c) => c.type === "Whatsapp");
+  const phoneHref = phoneEntry?.value ?? "tel:9151124094";
+  const emailHref = emailEntry?.value ?? "";
+  const whatsappHref = whatsappEntry?.value ?? "";
+  const phoneDisplay = phoneHref.replace("tel:", "");
+  const mailDisplay = emailHref.replace("mailto:mailto:", "");
+
+  console.log("emailEntry",whatsappHref);
   const { data: bookingData, isLoading, refetch } = useQuery({
     queryKey: ["booking-status", bookingId],
     queryFn: () => getBookingStatus(bookingId),
@@ -104,9 +115,7 @@ export default function BookingSuccess() {
             </div>
             <div className="flex items-center gap-2">
               <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusInfo.cls}`}>{statusInfo.label}</span>
-              <button onClick={() => setShowVerify(true)} className="btn-outline btn-sm gap-1.5">
-                <KeyRound size={13} /> Verify Booking
-              </button>
+              
               {canCancel && (
                 <button onClick={() => setShowCancel(true)} className="btn-sm rounded-lg border border-red-200 bg-red-50 px-3 text-xs font-semibold text-red-600 hover:bg-red-100 transition">
                   Cancel
@@ -166,9 +175,18 @@ export default function BookingSuccess() {
               <div className="card">
                 <h3 className="mb-2 font-semibold">Need Help?</h3>
                 <p className="mb-3 text-sm text-ink-500">Our support team is here for you</p>
-                <p className="mb-2 flex items-center gap-2 text-sm font-medium"><Phone size={14} className="text-primary-500" /> +91 78965 43210</p>
-                <button className="btn-outline btn-sm w-full text-[#25D366] border-[#25D366]"><MessageCircle size={14} /> Chat on WhatsApp</button>
-              </div>
+                <p className="mb-2 flex items-center gap-2 text-sm font-medium"><Phone size={14} className="text-primary-500" /> {phoneDisplay}</p>
+                <p className="mb-2 flex items-center gap-2 text-sm font-medium"><Inbox size={14} className="text-primary-500" /> {mailDisplay}</p>
+               
+<a
+  href={whatsappHref}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="btn-outline btn-sm w-full text-[#25D366] border-[#25D366] flex items-center justify-center gap-2"
+>
+  <MessageCircle size={14} />
+  Chat on WhatsApp
+</a>              </div>
 
               <div className="card">
                 <h3 className="mb-2 font-semibold">Booking Details</h3>

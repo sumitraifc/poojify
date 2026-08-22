@@ -13,4 +13,4 @@ export const updateAddress = (payload) =>
   axiosClient.post("/update-address", payload);
 
 export const deleteAddress = (address_id) =>
-  axiosClient.delete("/delete-address", { data: { address_id } });
+  axiosClient.delete("/delete_address", { data: { address_id } });

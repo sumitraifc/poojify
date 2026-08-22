@@ -176,6 +176,16 @@ function RecentBookingsTab() {
                       <span>{[b.address?.house_no, b.address?.city, b.address?.pincode, b.state].filter(Boolean).join(", ")}</span>
                     </div>
                     {b.landmark && <p className="pl-5 text-xs text-ink-500">Landmark: {b.landmark}</p>}
+                    {b.address && (
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent([b.address.house_no, b.address.city, b.address.pincode, "India"].filter(Boolean).join(", "))}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 flex items-center gap-1.5 rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-600 transition w-fit"
+                      >
+                        <MapPin size={12} /> Reach Location
+                      </a>
+                    )}
                   </div>
                 </div>
 

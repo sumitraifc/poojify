@@ -61,23 +61,73 @@ export default function OrderDetail() {
           </div>
 
           {/* Timeline */}
-          <div className="card mb-6">
+          {/* <div className="card mb-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               {timelineSteps.map((step, i) => {
                 const done = currentStepIndex >= 0 ? i <= currentStepIndex : false;
                 return (
                   <div key={step} className="flex items-center gap-2">
+                    
                     {done ? <CheckCircle2 size={18} className="text-success" /> : <Circle size={18} className="text-ink-500/30" />}
                     <span className={done ? "text-sm font-medium" : "text-sm text-ink-500"}>{step}</span>
-                    {/* {i < timelineSteps.length - 1 && <span className="mx-2 h-px w-8 bg-ink-500/15 sm:w-16" />} */}
-                   {i < timelineSteps.length - 1 && (
-            <div className="mx-3 h-px flex-1 bg-ink-500 " />
-          )}
+                    {i < timelineSteps.length - 1 && <span className="mx-2 h-px w-8 bg-ink-500/15 sm:w-16" />}
+              
                   </div>
                 );
               })}
             </div>
+          </div> */}
+          <div className="w-full overflow-x-auto mb-6">
+  <div className="flex min-w-[500px] items-start px-2">
+    {timelineSteps.map((step, i) => {
+      const done =
+        currentStepIndex >= 0 ? i <= currentStepIndex : false;
+
+      return (
+        <div
+          key={step}
+          className="flex flex-1 items-start last:flex-none"
+        >
+          {/* Step */}
+          <div className="flex w-auto shrink-0 flex-col items-center">
+            {done ? (
+              <CheckCircle2
+                size={20}
+                className="shrink-0 text-success"
+              />
+            ) : (
+              <Circle
+                size={20}
+                className="shrink-0 text-ink-500/30"
+              />
+            )}
+
+            <span
+              className={`mt-2 text-center text-xs sm:text-sm ${
+                done
+                  ? "font-medium"
+                  : "text-ink-500"
+              }`}
+            >
+              {step}
+            </span>
           </div>
+
+          {/* Line */}
+          {i < timelineSteps.length - 1 && (
+            <div
+              className={`mt-[10px] h-[2px] flex-1 ${
+                i < currentStepIndex
+                  ? "bg-success"
+                  : "bg-ink-500/15"
+              }`}
+            />
+          )}
+        </div>
+      );
+    })}
+  </div>
+</div>
 
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Summary */}
@@ -85,9 +135,9 @@ export default function OrderDetail() {
               <h3 className="mb-3 font-semibold">Order Summary</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-ink-500">Item Total</span><span>{formatINR(order.total_amount)}</span></div>
-                {Number(order.gst_amount) > 0 && (
+                {/* {Number(order.gst_amount) > 0 && (
                   <div className="flex justify-between"><span className="text-ink-500">GST ({order.gst_percentage}%)</span><span>{formatINR(order.gst_amount)}</span></div>
-                )}
+                )} */}
                 {Number(order.discount_amount) > 0 && (
                   <div className="flex justify-between text-success"><span>Discount</span><span>- {formatINR(order.discount_amount)}</span></div>
                 )}

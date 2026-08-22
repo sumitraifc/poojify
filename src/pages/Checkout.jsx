@@ -141,10 +141,12 @@ export default function Checkout() {
   const items = (Array.isArray(cartData) ? cartData : []).map((i) => ({
     id: i.item_id,
     name: i.name,
-    image: i.main_image,
+    image: i.main_image ?? i.products?.[0]?.main_image ?? null,
     price: Number(i.discount_price ?? i.price ?? 0),
     mrp: Number(i.price ?? 0),
     qty: Number(i.quantity ?? 1),
+    type: i.type ?? "product",
+    products: i.products ?? null,
   }));
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
@@ -182,12 +184,24 @@ export default function Checkout() {
               <div className="card">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="flex items-center gap-2 font-semibold"><MapPin size={17} className="text-primary-500" /> Delivery Address</h3>
-                  <button
+                  {/* <button
                     onClick={() => navigate("/profile/address", { state: { redirectTo: "/checkout" } })}
                     className="flex items-center gap-1 text-sm font-medium text-primary-600"
                   >
                     <Plus size={14} /> Add New Address
-                  </button>
+                  </button> */}
+                  {addresses.length > 1 && (
+  <button
+    onClick={() =>
+      navigate("/profile/address", {
+        state: { redirectTo: "/checkout" },
+      })
+    }
+    className="flex items-center gap-1 text-sm font-medium text-primary-600"
+  >
+    <Plus size={14} /> Add New Address
+  </button>
+)}
                 </div>
                 {addresses.length === 0 ? (
                   <div className="rounded-xl border-2 border-dashed border-primary-300 py-6 text-center">
@@ -265,13 +279,23 @@ export default function Checkout() {
               <h3 className="mb-4 font-semibold">Order Summary</h3>
               <div className="mb-3 max-h-56 space-y-3 overflow-y-auto">
                 {items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3">
-                    <img src={item.image} className="h-12 w-12 rounded-lg object-cover" alt={item.name} />
+                  <div key={item.id} className="flex items-start gap-3">
+                    {item.image
+                      ? <img src={item.image} className="h-12 w-12 shrink-0 rounded-lg object-cover" alt={item.name} />
+                      : <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-cream-100 text-[10px] text-ink-400">Combo</div>
+                    }
                     <div className="flex-1 text-sm">
-                      <p className="font-medium">{item.name}</p>
+                      <p className="font-medium leading-snug">{item.name}</p>
+                      {item.type === "combo" && item.products?.length > 0 && (
+                        <div className="mt-0.5 space-y-0.5">
+                          {item.products.map((p) => (
+                            <p key={p.id} className="text-[11px] text-ink-500 leading-snug">• {p.name.trim()}</p>
+                          ))}
+                        </div>
+                      )}
                       <p className="text-xs text-ink-500">Qty: {item.qty}</p>
                     </div>
-                    <span className="text-sm font-semibold">{formatINR(item.price * item.qty)}</span>
+                    <span className="text-sm font-semibold shrink-0">{formatINR(item.price * item.qty)}</span>
                   </div>
                 ))}
               </div>
