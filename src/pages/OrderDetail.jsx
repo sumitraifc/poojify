@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { CheckCircle2, Circle, Star, XCircle } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, Circle, Star, XCircle, Pencil, Trash2 } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
 import Button from "../components/common/Button";
 import { PageLoader } from "../components/common/Loader";
 import ReviewModal from "../components/common/ReviewModal";
 import { getOrderHistory, cancelOrder } from "../api/orderApi";
+import { deleteReview } from "../api/reviewApi";
 import { formatINR } from "../utils/format";
 import { showToast } from "../components/common/Toast";
 
@@ -18,8 +19,19 @@ export default function OrderDetail() {
   const navigate = useNavigate();
   const [cancelReason, setCancelReason] = useState("");
   const [showCancelBox, setShowCancelBox] = useState(false);
-  const [reviewModal, setReviewModal] = useState(null); // item object
-  const [submitted, setSubmitted] = useState({}); // { item_id: true }
+  const queryClient = useQueryClient();
+  const [reviewModal, setReviewModal] = useState(null); // { item, editData }
+  const [deletingId, setDeletingId] = useState(null);
+
+  const deleteMutation = useMutation({
+    mutationFn: (review_id) => deleteReview(review_id),
+    onSuccess: (res) => {
+      showToast.success(res?.message || "Review deleted");
+      setDeletingId(null);
+      queryClient.invalidateQueries({ queryKey: ["order-history"] });
+    },
+    onError: (err) => showToast.error(err?.message || "Failed to delete review"),
+  });
 
   const cancelMutation = useMutation({
     mutationFn: ({ order_id, reason }) => cancelOrder(order_id, reason),
@@ -167,7 +179,6 @@ export default function OrderDetail() {
               <h3 className="mb-3 font-semibold">Ordered Items ({items.length})</h3>
               <div className="space-y-3">
                 {items.map((item, i) => {
-                  const done = submitted[item.item_id];
                   return (
                     <div key={i} className="flex items-center gap-3 rounded-xl border border-ink-500/10 p-3">
                       {item.main_image && (
@@ -181,20 +192,45 @@ export default function OrderDetail() {
                         </button>
                         <p className="text-xs text-ink-500 capitalize">Type: {item.type}</p>
                         <p className="text-xs text-ink-500">Qty: {item.quantity}</p>
-                        {/* Per-item review button */}
+
+                        {/* Stars if already reviewed */}
+                        {item.is_review && (
+                          <div className="mt-1 flex items-center gap-1">
+                            {[1,2,3,4,5].map((n) => (
+                              <Star key={n} size={12} className={n <= item.rating ? "fill-primary-500 text-primary-500" : "text-ink-500/20"} />
+                            ))}
+                            {item.review_text && <span className="ml-1 text-[11px] text-ink-500 line-clamp-1">{item.review_text}</span>}
+                          </div>
+                        )}
+
+                        {/* Review actions */}
                         {status === "delivered" && (
-                          <button
-                            disabled={done}
-                            onClick={() => !done && setReviewModal(item)}
-                            className={`mt-1.5 flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition ${
-                              done
-                                ? "bg-green-50 text-green-600 cursor-default"
-                                : "bg-primary-50 text-primary-600 hover:bg-primary-100"
-                            }`}
-                          >
-                            <Star size={11} className={done ? "fill-green-500 text-green-500" : "text-primary-500"} />
-                            {done ? "Reviewed" : "Write a Review"}
-                          </button>
+                          <div className="mt-1.5 flex items-center gap-2">
+                            {item.is_review ? (
+                              <>
+                                <button
+                                  onClick={() => setReviewModal({ item, editData: { review_id: item.review_id, rating: item.rating, review_text: item.review_text, review_images: item.review_images } })}
+                                  className="flex items-center gap-1 rounded-lg bg-primary-50 px-2 py-1 text-xs font-medium text-primary-600 hover:bg-primary-100"
+                                >
+                                  <Pencil size={11} /> Edit
+                                </button>
+                                <button
+                                  disabled={deleteMutation.isPending && deletingId === item.review_id}
+                                  onClick={() => { setDeletingId(item.review_id); deleteMutation.mutate(item.review_id); }}
+                                  className="flex items-center gap-1 rounded-lg bg-danger/10 px-2 py-1 text-xs font-medium text-danger hover:bg-danger/20 disabled:opacity-50"
+                                >
+                                  <Trash2 size={11} /> Delete
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => setReviewModal({ item, editData: null })}
+                                className="flex items-center gap-1 rounded-lg bg-primary-50 px-2 py-1 text-xs font-medium text-primary-600 hover:bg-primary-100"
+                              >
+                                <Star size={11} className="text-primary-500" /> Write a Review
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                       <div className="text-right shrink-0">
@@ -253,11 +289,12 @@ export default function OrderDetail() {
       {reviewModal && (
         <ReviewModal
           order_id={order.order_id ?? id}
-          item={reviewModal}
+          item={reviewModal.item}
+          editData={reviewModal.editData}
           onClose={() => setReviewModal(null)}
           onSuccess={() => {
-            setSubmitted((prev) => ({ ...prev, [reviewModal.item_id]: true }));
             setReviewModal(null);
+            queryClient.invalidateQueries({ queryKey: ["order-history"] });
           }}
         />
       )}

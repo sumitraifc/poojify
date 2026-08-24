@@ -84,7 +84,7 @@ export default function ProfileEdit() {
         <div className="w-full max-w-lg">
           <Breadcrumb items={[{ label: "Home", to: "/" }, { label: "Edit Profile" }]} />
           <div className="card">
-            <h1 className="mb-5 text-xl font-bold">Edit Profile</h1>
+            <h1 className="mb-5 text-xl font-bold">Edit Profile <span className="text-[11px] text-primary-500">(Mobile no. cannot be changed here)</span></h1>
 
             {/* Avatar picker */}
             <div className="mb-6 flex flex-col items-center gap-2">

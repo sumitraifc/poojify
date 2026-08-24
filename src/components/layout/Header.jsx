@@ -51,6 +51,50 @@ function CategoryDropdown({ categories, onSelect }) {
   );
 }
 
+// unread check — handles both 0/1 integer and false/true boolean from API
+function isUnread(n) {
+  return n.is_read === 0 || n.is_read === false || n.is_read === "0";
+}
+
+function NotifList({ notifications, onReadOne, onReadAll, unreadCount }) {
+  return (
+    <div onMouseDown={(e) => e.stopPropagation()} className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-ink-500/10 bg-white shadow-cardHover dark:bg-[#1B140F]">
+      <div className="flex items-center justify-between border-b border-ink-500/10 px-4 py-3">
+        <p className="font-semibold">Notifications</p>
+        {unreadCount > 0 && (
+          <button onClick={onReadAll} className="flex items-center gap-1 text-xs text-primary-600 hover:underline">
+            <CheckCheck size={13} /> Mark all read
+          </button>
+        )}
+      </div>
+      <div className="max-h-80 overflow-y-auto">
+        {notifications.length === 0 ? (
+          <p className="py-8 text-center text-sm text-ink-500">No notifications</p>
+        ) : (
+          notifications.map((n) => (
+            <div
+              key={n.id}
+              onClick={() => onReadOne(n.id)}
+              className={`cursor-pointer border-b border-ink-500/5 px-4 py-3 transition hover:bg-cream-50 dark:hover:bg-white/5 ${isUnread(n) ? "bg-primary-50/60 dark:bg-primary-900/10" : ""}`}
+            >
+              <div className="flex items-start gap-2">
+                {isUnread(n) && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary-500" />}
+                <div className={isUnread(n) ? "" : "pl-4"}>
+                  <p className="text-sm font-medium">{n.title}</p>
+                  <p className="text-xs text-ink-500">{n.message}</p>
+                  <p className="mt-1 text-[10px] text-ink-500/60">
+                    {new Date(n.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Header() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -67,9 +111,7 @@ export default function Header() {
 
   const handleMenuClose = useCallback(() => setMenuOpen(false), []);
 
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
 
   useClickOutside(notifRef, () => setNotifOpen(false));
   useClickOutside(searchRef, () => setSearchFocused(false));
@@ -104,11 +146,37 @@ export default function Header() {
 
   const { mutate: readOne } = useMutation({
     mutationFn: (id) => markNotificationRead(id),
+    onMutate: (id) => {
+      queryClient.setQueryData(["notifications"], (old) => {
+        if (!old) return old;
+        const prev = old?.data ?? old;
+        const updated = {
+          ...prev,
+          unread_count: Math.max(0, (prev.unread_count ?? 1) - 1),
+          list: (prev.list ?? []).map((n) => n.id === id ? { ...n, is_read: 1 } : n),
+        };
+        return old?.data !== undefined ? { ...old, data: updated } : updated;
+      });
+    },
+    onError: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
   });
 
   const { mutate: readAll } = useMutation({
     mutationFn: markAllNotificationsRead,
+    onMutate: () => {
+      queryClient.setQueryData(["notifications"], (old) => {
+        if (!old) return old;
+        const prev = old?.data ?? old;
+        const updated = {
+          ...prev,
+          unread_count: 0,
+          list: (prev.list ?? []).map((n) => ({ ...n, is_read: 1 })),
+        };
+        return old?.data !== undefined ? { ...old, data: updated } : updated;
+      });
+    },
+    onError: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
   });
 
@@ -133,11 +201,6 @@ export default function Header() {
     setSearch(name);
     setSearchFocused(false);
     navigate(`/search?q=${encodeURIComponent(name)}`);
-  }
-
-  function formatTime(dateStr) {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   }
 
   const showDropdown = searchFocused && !search && categories.length > 0;
@@ -190,7 +253,7 @@ export default function Header() {
           {isAuthenticated && (
             <div ref={notifRef} className="relative hidden lg:block">
               <button
-                onClick={() => setNotifOpen((p) => !p)}
+                onClick={(e) => { e.stopPropagation(); setNotifOpen((p) => !p); }}
                 className="relative flex h-9 w-9 items-center justify-center rounded-full bg-cream-200 dark:bg-white/10"
                 aria-label="Notifications"
               >
@@ -201,40 +264,13 @@ export default function Header() {
                   </span>
                 )}
               </button>
-
               {notifOpen && (
-                <div className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-ink-500/10 bg-white shadow-cardHover dark:bg-[#1B140F]">
-                  <div className="flex items-center justify-between border-b border-ink-500/10 px-4 py-3">
-                    <p className="font-semibold">Notifications</p>
-                    {unreadCount > 0 && (
-                      <button onClick={() => readAll()} className="flex items-center gap-1 text-xs text-primary-600 hover:underline">
-                        <CheckCheck size={13} /> Mark all read
-                      </button>
-                    )}
-                  </div>
-                  <div className="max-h-80 overflow-y-auto">
-                    {notifications.length === 0 ? (
-                      <p className="py-8 text-center text-sm text-ink-500">No notifications</p>
-                    ) : (
-                      notifications.map((n) => (
-                        <div
-                          key={n.id}
-                          onClick={() => !n.is_read && readOne(n.id)}
-                          className={`cursor-pointer border-b border-ink-500/5 px-4 py-3 transition hover:bg-cream-50 dark:hover:bg-white/5 ${!n.is_read ? "bg-primary-50/60 dark:bg-primary-900/10" : ""}`}
-                        >
-                          <div className="flex items-start gap-2">
-                            {!n.is_read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary-500" />}
-                            <div className={!n.is_read ? "" : "pl-4"}>
-                              <p className="text-sm font-medium">{n.title}</p>
-                              <p className="text-xs text-ink-500">{n.message}</p>
-                              <p className="mt-1 text-[10px] text-ink-500/60">{formatTime(n.created_at)}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
+                <NotifList
+                  notifications={notifications}
+                  unreadCount={unreadCount}
+                  onReadOne={readOne}
+                  onReadAll={readAll}
+                />
               )}
             </div>
           )}
@@ -291,7 +327,7 @@ export default function Header() {
           {isAuthenticated && (
             <div ref={notifRef} className="relative shrink-0">
               <button
-                onClick={() => setNotifOpen((p) => !p)}
+                onClick={(e) => { e.stopPropagation(); setNotifOpen((p) => !p); }}
                 className="relative flex h-9 w-9 items-center justify-center rounded-full bg-cream-200 dark:bg-white/10"
                 aria-label="Notifications"
               >
@@ -303,38 +339,12 @@ export default function Header() {
                 )}
               </button>
               {notifOpen && (
-                <div className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-ink-500/10 bg-white shadow-cardHover dark:bg-[#1B140F]">
-                  <div className="flex items-center justify-between border-b border-ink-500/10 px-4 py-3">
-                    <p className="font-semibold">Notifications</p>
-                    {unreadCount > 0 && (
-                      <button onClick={() => readAll()} className="flex items-center gap-1 text-xs text-primary-600 hover:underline">
-                        <CheckCheck size={13} /> Mark all read
-                      </button>
-                    )}
-                  </div>
-                  <div className="max-h-80 overflow-y-auto">
-                    {notifications.length === 0 ? (
-                      <p className="py-8 text-center text-sm text-ink-500">No notifications</p>
-                    ) : (
-                      notifications.map((n) => (
-                        <div
-                          key={n.id}
-                          onClick={() => !n.is_read && readOne(n.id)}
-                          className={`cursor-pointer border-b border-ink-500/5 px-4 py-3 transition hover:bg-cream-50 dark:hover:bg-white/5 ${!n.is_read ? "bg-primary-50/60 dark:bg-primary-900/10" : ""}`}
-                        >
-                          <div className="flex items-start gap-2">
-                            {!n.is_read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary-500" />}
-                            <div className={!n.is_read ? "" : "pl-4"}>
-                              <p className="text-sm font-medium">{n.title}</p>
-                              <p className="text-xs text-ink-500">{n.message}</p>
-                              <p className="mt-1 text-[10px] text-ink-500/60">{formatTime(n.created_at)}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
+                <NotifList
+                  notifications={notifications}
+                  unreadCount={unreadCount}
+                  onReadOne={readOne}
+                  onReadAll={readAll}
+                />
               )}
             </div>
           )}

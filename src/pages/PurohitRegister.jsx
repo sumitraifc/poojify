@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { GoogleMap, useJsApiLoader, OverlayView } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
 import { Camera, Image as ImageIcon, MapPin, LocateFixed, Search, ShieldCheck, Lock, Wallet, Headset, CheckCircle2 } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
@@ -37,7 +37,7 @@ export default function PurohitRegister() {
   const debounceTimerRef = useRef(null);
 
   const [mapCenter, setMapCenter] = useState({ lat: storeLat ?? 26.8467, lng: storeLng ?? 80.9462 });
-  const [markerPos, setMarkerPos] = useState(storeLat ? { lat: storeLat, lng: storeLng } : null);
+  const [markerPos, setMarkerPos] = useState(storeLat ? { lat: storeLat, lng: storeLng } : { lat: 26.8467, lng: 80.9462 });
   const [lat, setLat] = useState(storeLat ?? "");
   const [lng, setLng] = useState(storeLng ?? "");
   const [detectedAddress, setDetectedAddress] = useState(null);
@@ -109,6 +109,8 @@ export default function PurohitRegister() {
     mapRef.current = map;
     if (window.google?.maps?.places)
       placesServiceRef.current = new window.google.maps.places.PlacesService(map);
+    // agar markerPos abhi bhi null hai to default center pe pin lagao
+    setMarkerPos((prev) => prev ?? { lat: 26.8467, lng: 80.9462 });
   }
 
   async function reverseGeocode(lt, ln) {
@@ -309,6 +311,16 @@ export default function PurohitRegister() {
                   </div>
                 </div>
                 <F label="Email ID" type="email" value={form.email} onChange={set("email")} placeholder="Enter email address" required />
+                {/* <F
+  label="Email ID"
+  type="email"
+  value={form.email}
+  onChange={set("email")}
+  placeholder="Enter email address"
+  pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+  title="Please enter a valid email address"
+  required
+/> */}
                 <div>
                   <label className="label">About</label>
                   <textarea value={form.about} onChange={set("about")} rows={3} className="input" placeholder="Tell us about yourself..." />
@@ -418,30 +430,11 @@ export default function PurohitRegister() {
                       options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false, gestureHandling: "greedy" }}
                     >
                       {markerPos && (
-                        <OverlayView position={markerPos} mapPaneName={OverlayView.FLOAT_PANE}>
-                          <div style={{ transform: "translate(-50%, -100%)", cursor: "grab", pointerEvents: "auto", zIndex: 9999 }}
-                            onMouseDown={(e) => {
-                              e.stopPropagation();
-                              const map = mapRef.current;
-                              if (!map) return;
-                              map.setOptions({ draggable: false });
-                              const mmListener = map.addListener("mousemove", (me) =>
-                                setMarkerPos({ lat: me.latLng.lat(), lng: me.latLng.lng() })
-                              );
-                              const muListener = map.addListener("mouseup", (me) => {
-                                map.setOptions({ draggable: true });
-                                window.google.maps.event.removeListener(mmListener);
-                                window.google.maps.event.removeListener(muListener);
-                                pinLocation(me.latLng.lat(), me.latLng.lng());
-                              });
-                            }}
-                          >
-                            <svg width="32" height="40" viewBox="0 0 32 40" fill="none">
-                              <path d="M16 0C7.163 0 0 7.163 0 16c0 10 16 24 16 24s16-14 16-24C32 7.163 24.837 0 16 0z" fill="#F5960F"/>
-                              <circle cx="16" cy="16" r="6" fill="white"/>
-                            </svg>
-                          </div>
-                        </OverlayView>
+                        <Marker
+                          position={markerPos}
+                          draggable
+                          onDragEnd={(e) => pinLocation(e.latLng.lat(), e.latLng.lng())}
+                        />
                       )}
                     </GoogleMap>
                   ) : (
@@ -476,7 +469,7 @@ export default function PurohitRegister() {
                 )}
 
                 {/* Nearby landmarks */}
-                {nearbyPlaces.length > 0 && (
+                {/* {nearbyPlaces.length > 0 && (
                   <div>
                     <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-500">Nearby Landmarks</p>
                     <div className="flex flex-wrap gap-1.5">
@@ -488,7 +481,7 @@ export default function PurohitRegister() {
                       ))}
                     </div>
                   </div>
-                )}
+                )} */}
 
                 <div>
                   <label className="label">House No / Street <span className="text-danger">*</span></label>

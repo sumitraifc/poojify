@@ -3,7 +3,7 @@ import { Facebook, Instagram, Youtube, Shield, Package, RefreshCw, Headset } fro
 import { useTranslation } from "react-i18next";
 import Logo from "./Logo";
 import { useAuthStore } from "../../store/authStore";
-
+import googleplayimg from "/googleplay1.png";
 const shopCategories = ["Pooja Samagri", "Pooja Kits", "Flowers & Garlands", "Havan Essentials", "Agarbatti, Dhoop & Incense", "Diyas & Lighting"];
 const quickLinks = [
   { label: "Home", to: "/" },
@@ -68,7 +68,21 @@ export default function Footer() {
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-2">
             <Logo />
+            
             <p className="mt-3 max-w-xs text-sm text-ink-500 dark:text-cream-100/60">{t("footer.trustedPlatform")}</p>
+              {/* Google Play */}
+  <a
+    href="https://play.google.com/store/apps/details?id=com.fc.poojify&hl=en_IN"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="mt-4 inline-block"
+  >
+    <img
+      src={googleplayimg}
+      alt="Get it on Google Play"
+      className="h-12 w-auto"
+    />
+  </a>
             <div className="mt-4 flex gap-3">
               {[Facebook, Instagram, Youtube].map((Icon, i) => (
                 <a key={i} href="#" className="flex h-8 w-8 items-center justify-center rounded-full bg-maroon-700 text-white hover:bg-primary-500">

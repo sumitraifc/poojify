@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { MapPin, Plus, Home, Briefcase, Tag, Lock, Smartphone, CreditCard, Truck, ShieldCheck } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
@@ -24,6 +24,8 @@ const payIconMap = {
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const { state } = useLocation();
+  const appliedCoupon = state?.appliedCoupon ?? null;
   const queryClient = useQueryClient();
   const clearCart = useCartStore((s) => s.clearCart);
   const [addressId, setAddressId] = useState(null);
@@ -153,7 +155,12 @@ export default function Checkout() {
   const gstPct = config?.gst_percentage ?? 0;
   const deliveryCharge = config?.charges?.find((c) => c.name === "DELIVERY_CHARGE")?.value ?? 0;
   const gstAmount = Math.round(subtotal * gstPct / 100);
-  const grandTotal = subtotal + gstAmount + Number(deliveryCharge);
+  const couponDiscount = appliedCoupon
+    ? appliedCoupon.discount_type === "percent"
+      ? Math.round(subtotal * Number(appliedCoupon.discount_value) / 100)
+      : Number(appliedCoupon.discount_value)
+    : 0;
+  const grandTotal = subtotal - couponDiscount + gstAmount + Number(deliveryCharge);
 
   // Set default payment once config loads
   const paymentMethods = config?.payment_methods ?? [];
@@ -164,7 +171,7 @@ export default function Checkout() {
     if (!addressId) return showToast.error("Select a delivery address");
     setPlacing(true);
     submitOrder({
-      coupon_id: 0,
+      coupon_id: appliedCoupon?.id ?? 0,
       payment_method: payment,
       address_id: addressId,
     });
@@ -301,6 +308,9 @@ export default function Checkout() {
               </div>
               <div className="space-y-2 border-t border-ink-500/10 pt-3 text-sm">
                 <Row label={`Subtotal (${items.length} Items)`} value={formatINR(subtotal)} />
+                {appliedCoupon && (
+                  <Row label={`Coupon (${appliedCoupon.code})`} value={`- ${formatINR(couponDiscount)}`} valueClass="text-success" />
+                )}
                 {/* {gstPct > 0 && <Row label={`GST (${gstPct}%)`} value={formatINR(gstAmount)} />} */}
                 <Row
                   label="Delivery Charges"

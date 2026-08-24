@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Leaf, Gem, Package, Heart as HeartHand, Star, BadgeCheck, ThumbsUp } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
@@ -8,7 +8,7 @@ import Button from "../components/common/Button";
 import QuantityStepper from "../components/common/QuantityStepper";
 import { PageLoader } from "../components/common/Loader";
 import { getProductDetail, getYouMightLike } from "../api/productApi";
-import { updateCart } from "../api/cartApi";
+import { updateCart, getCartList } from "../api/cartApi";
 import { formatINR } from "../utils/format";
 import { useCartStore } from "../store/cartStore";
 import { useAuthStore } from "../store/authStore";
@@ -29,31 +29,52 @@ export default function ProductDetail({ type = "product" }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const queryClient = useQueryClient();
 
-  const { mutate: addToCart, isPending: addingToCart } = useMutation({
-    mutationFn: () => Promise.all(
-      Array.from({ length: qty }, () => updateCart(product?.id, type, 1))
-    ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart-list"] });
-      showToast.success(`${product.name} added to cart`);
-    },
-    onError: (err) => showToast.error(err?.message || "Failed to add to cart"),
-  });
-
-  function handleAddToCart() {
-    if (!isAuthenticated) {
-      window.dispatchEvent(new CustomEvent("poojify:require-login"));
-      return;
-    }
-    addToCart();
-  }
-
-  const { data: product, isLoading } = useQuery({
+   const { data: product, isLoading } = useQuery({
     queryKey: ["product-detail", id, type],
     queryFn: () => getProductDetail(id, type),
     select: (res) => res?.data?.data ?? res?.data ?? res,
     enabled: !!id,
   });
+  
+  // Fetch cart-list so refresh pe bhi correct qty mile
+  const { data: cartData } = useQuery({
+    queryKey: ["cart-list"],
+    queryFn: getCartList,
+    select: (res) => res?.data?.data ?? res?.data ?? res,
+    enabled: isAuthenticated,
+  });
+  const cartItems = Array.isArray(cartData) ? cartData : [];
+  const cartItem = cartItems.find((i) => i.item_id === product?.id);
+  const cartQty = Number(cartItem?.quantity ?? 0);
+
+  const { mutate: cartAction, isPending: cartPending } = useMutation({
+    mutationFn: (action) => updateCart(product?.id, type, action),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cart-list"] }),
+    onError: (err) => showToast.error(err?.message || "Failed to update cart"),
+  });
+
+  function handleCartAction(action) {
+    if (!isAuthenticated) {
+      window.dispatchEvent(new CustomEvent("poojify:require-login"));
+      return;
+    }
+    cartAction(action);
+  }
+
+  // Add qty items one by one (API takes single action)
+  function handleAddToCart() {
+    if (!isAuthenticated) {
+      window.dispatchEvent(new CustomEvent("poojify:require-login"));
+      return;
+    }
+    // Call add action `qty` times sequentially
+    const calls = Array.from({ length: qty }, (_, i) => i);
+    calls.reduce((p) => p.then(() => updateCart(product?.id, type, 1)), Promise.resolve())
+      .then(() => queryClient.invalidateQueries({ queryKey: ["cart-list"] }))
+      .catch((err) => showToast.error(err?.message || "Failed to add to cart"));
+  }
+
+ 
 
   const { data: related = [] } = useQuery({
     queryKey: ["you-might-like", id, type],
@@ -140,10 +161,29 @@ export default function ProductDetail({ type = "product" }) {
               </div>
 
               <div className="mt-6 flex items-center gap-4">
-                <QuantityStepper value={qty} onChange={setQty} />
-                <Button className="flex-1" loading={addingToCart} onClick={handleAddToCart}>
-                  Add to Cart
-                </Button>
+                {cartQty === 0 ? (
+                  <>
+                    <QuantityStepper value={qty} onChange={setQty} />
+                    <Button className="flex-1" loading={cartPending} onClick={handleAddToCart}>
+                      Add to Cart
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3 rounded-lg border border-primary-200 bg-white px-3 py-2">
+                      <button onClick={() => handleCartAction(-1)} disabled={cartPending} className="text-danger disabled:opacity-40">
+                        <span className="text-lg font-bold">−</span>
+                      </button>
+                      <span className="min-w-[1.5rem] text-center text-base font-bold">{cartQty}</span>
+                      <button onClick={() => handleCartAction(1)} disabled={cartPending} className="text-primary-600 disabled:opacity-40">
+                        <span className="text-lg font-bold">+</span>
+                      </button>
+                    </div>
+                    <Link to="/cart" className="btn-primary flex-1 text-center">
+                      View Cart
+                    </Link>
+                  </>
+                )}
               </div>
 
               {/* Combo included products — shown below Add to Cart */}
@@ -353,11 +393,11 @@ export default function ProductDetail({ type = "product" }) {
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-2.5">
                             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-600">
-                              {review.name?.charAt(0) ?? "U"}
+                              {review.user_name?.charAt(0) ?? "U"}
                             </span>
                             <div>
                               <p className="flex items-center gap-1 text-sm font-medium">
-                                {review.name} {review.verified && <BadgeCheck size={13} className="text-success" />}
+                                {review.user_name} {review.verified && <BadgeCheck size={13} className="text-success" />}
                               </p>
                               <div className="flex">
                                 {[1,2,3,4,5].map((n) => (
@@ -368,7 +408,7 @@ export default function ProductDetail({ type = "product" }) {
                           </div>
                           {review.date && <span className="text-[11px] text-ink-500">{review.date}</span>}
                         </div>
-                        {review.message && <p className="mt-2 text-sm text-ink-500">{review.message}</p>}
+                        {review.review_text && <p className="mt-2 text-sm text-ink-500">{review.review_text}</p>}
                         {review.helpful != null && (
                           <button className="mt-2 flex items-center gap-1 text-xs text-ink-500 hover:text-primary-600">
                             <ThumbsUp size={12} /> Helpful ({review.helpful})

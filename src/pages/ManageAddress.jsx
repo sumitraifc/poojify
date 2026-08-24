@@ -281,12 +281,7 @@ export default function ManageAddress() {
   }
 
   function handlePickNearbyPlace(place) {
-    const lat = place.geometry.location.lat();
-    const lng = place.geometry.location.lng();
-    console.log("[Nearby Search API] Place picked ->", { name: place.name, lat, lng });
-    setCenter({ lat, lng });
-    setMarkerPos({ lat, lng });
-    reverseGeocode(lat, lng);
+    setForm((f) => ({ ...f, landmark: place.name ?? "" }));
   }
 
   function detectCurrentLocation() {

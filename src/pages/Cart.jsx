@@ -9,7 +9,6 @@ import EmptyState from "../components/common/EmptyState";
 import Button from "../components/common/Button";
 import QuantityStepper from "../components/common/QuantityStepper";
 import { PageLoader } from "../components/common/Loader";
-import { useCartStore } from "../store/cartStore";
 import { useAuthStore } from "../store/authStore";
 import { getCartList, updateCart, clearCartApi, getCouponList } from "../api/cartApi";
 import { formatINR } from "../utils/format";
@@ -24,7 +23,6 @@ const perks = [
 
 export default function Cart() {
   const navigate = useNavigate();
-  const { removeItem, updateQty } = useCartStore();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const queryClient = useQueryClient();
   const [couponInput, setCouponInput] = useState("");
@@ -54,15 +52,13 @@ export default function Cart() {
   });
 
   function handleRemove(item) {
-    cartAction({ item_id: item.id, type: item.type ?? "product", action: -1 });
-    removeItem(item.id);
+    cartAction({ item_id: item.item_id ?? item.id, type: item.type ?? "product", action: -1 });
   }
 
   function handleQtyChange(item, newQty) {
     const diff = newQty - item.qty;
     if (diff === 0) return;
-    cartAction({ item_id: item.id, type: item.type ?? "product", action: diff > 0 ? 1 : -1 });
-    updateQty(item.id, newQty);
+    cartAction({ item_id: item.item_id ?? item.id, type: item.type ?? "product", action: diff > 0 ? 1 : -1 });
   }
 
   function applyCoupon(code) {
@@ -150,10 +146,25 @@ export default function Cart() {
                         >
                           <td className="p-4">
                             <div className="flex items-center gap-3">
-                              {item.image
+                              {/* {item.image
                                 ? <img src={item.image} alt={item.name} className="h-16 w-16 shrink-0 rounded-lg object-cover" />
                                 : <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-cream-100 text-xs text-ink-400">Combo</div>
-                              }
+                              } */}
+                              <Link
+                                  to={item.type === "combo" ? `/combo-offers/${item.id}` : `/shop/product/${item.id}`}
+                                >
+                                  {item.image ? (
+                                    <img
+                                      src={item.image}
+                                      alt={item.name}
+                                      className="h-16 w-16 shrink-0 rounded-lg object-cover"
+                                    />
+                                  ) : (
+                                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-cream-100 text-xs text-ink-400">
+                                      Combo
+                                    </div>
+                                  )}
+                                </Link>
                               <div>
                                 <Link
                                   to={item.type === "combo" ? `/combo-offers/${item.id}` : `/shop/product/${item.id}`}
@@ -330,7 +341,7 @@ export default function Cart() {
                     window.dispatchEvent(new CustomEvent("poojify:require-login"));
                     return;
                   }
-                  navigate("/checkout");
+                  navigate("/checkout", { state: { appliedCoupon } });
                 }}>
                   <Lock size={15} /> Proceed to Checkout
                 </Button>

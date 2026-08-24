@@ -1,14 +1,16 @@
 import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { Star, PackageSearch } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Star, PackageSearch, Pencil, Trash2 } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
 import EmptyState from "../components/common/EmptyState";
 import { PageLoader } from "../components/common/Loader";
 import ReviewModal from "../components/common/ReviewModal";
 import { getOrderHistory } from "../api/orderApi";
+import { deleteReview } from "../api/reviewApi";
 import { formatINR } from "../utils/format";
+import { showToast } from "../components/common/Toast";
 
 const tabs = ["All", "Pending", "Confirmed", "Delivered", "Cancelled"];
 
@@ -23,10 +25,20 @@ const statusStyle = {
 
 export default function MyOrders() {
   const [tab, setTab] = useState("All");
-  const [reviewModal, setReviewModal] = useState(null); // { order_id, item }
-  // track submitted reviews: key = `${order_id}_${item_id}`
-  const [submitted, setSubmitted] = useState({});
+  const [reviewModal, setReviewModal] = useState(null); // { order_id, item, editData }
+  const [deletingId, setDeletingId] = useState(null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: (review_id) => deleteReview(review_id),
+    onSuccess: (res) => {
+      showToast.success(res?.message || "Review deleted");
+      setDeletingId(null);
+      queryClient.invalidateQueries({ queryKey: ["order-history"] });
+    },
+    onError: (err) => showToast.error(err?.message || "Failed to delete review"),
+  });
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["order-history"],
@@ -96,25 +108,41 @@ export default function MyOrders() {
                     {/* Per-item review buttons (only for delivered orders) */}
                     {order.status?.toLowerCase() === "delivered" && (
                       <div className="flex flex-col gap-1">
-                        {order.items?.map((item) => {
-                          const key = `${order.order_id}_${item.item_id}`;
-                          const done = submitted[key];
-                          return (
-                            <button
-                              key={item.item_id}
-                              disabled={done}
-                              onClick={() => !done && setReviewModal({ order_id: order.order_id, item })}
-                              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition ${
-                                done
-                                  ? "bg-green-50 text-green-600 cursor-default"
-                                  : "bg-primary-50 text-primary-600 hover:bg-primary-100"
-                              }`}
-                            >
-                              <Star size={11} className={done ? "fill-green-500 text-green-500" : "text-primary-500"} />
-                              {done ? "Reviewed" : `Review: ${item.name?.slice(0, 20)}${item.name?.length > 20 ? "…" : ""}`}
-                            </button>
-                          );
-                        })}
+                        {order.items?.map((item) => (
+                          <div key={item.item_id} className="flex items-center gap-1.5">
+                            {item.is_review ? (
+                              <>
+                                {/* Stars */}
+                                <div className="flex">
+                                  {[1,2,3,4,5].map((n) => (
+                                    <Star key={n} size={11} className={n <= item.rating ? "fill-primary-500 text-primary-500" : "text-ink-500/20"} />
+                                  ))}
+                                </div>
+                                <button
+                                  onClick={() => setReviewModal({ order_id: order.order_id, item, editData: { review_id: item.review_id, rating: item.rating, review_text: item.review_text, review_images: item.review_images } })}
+                                  className="flex items-center gap-1 rounded-lg bg-primary-50 px-2 py-1 text-xs font-medium text-primary-600 hover:bg-primary-100"
+                                >
+                                  <Pencil size={10} /> Edit
+                                </button>
+                                <button
+                                  disabled={deleteMutation.isPending && deletingId === item.review_id}
+                                  onClick={() => { setDeletingId(item.review_id); deleteMutation.mutate(item.review_id); }}
+                                  className="flex items-center gap-1 rounded-lg bg-danger/10 px-2 py-1 text-xs font-medium text-danger hover:bg-danger/20 disabled:opacity-50"
+                                >
+                                  <Trash2 size={10} /> Delete
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => setReviewModal({ order_id: order.order_id, item, editData: null })}
+                                className="flex items-center gap-1 rounded-lg bg-primary-50 px-2 py-1 text-xs font-medium text-primary-600 hover:bg-primary-100"
+                              >
+                                <Star size={11} className="text-primary-500" />
+                                {`Review: ${item.name?.slice(0, 20)}${item.name?.length > 20 ? "…" : ""}`}
+                              </button>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -155,16 +183,15 @@ export default function MyOrders() {
         </div>
       </div>
 
-      {/* Review Modal */}
       {reviewModal && (
         <ReviewModal
           order_id={reviewModal.order_id}
           item={reviewModal.item}
+          editData={reviewModal.editData}
           onClose={() => setReviewModal(null)}
           onSuccess={() => {
-            const key = `${reviewModal.order_id}_${reviewModal.item.item_id}`;
-            setSubmitted((prev) => ({ ...prev, [key]: true }));
             setReviewModal(null);
+            queryClient.invalidateQueries({ queryKey: ["order-history"] });
           }}
         />
       )}

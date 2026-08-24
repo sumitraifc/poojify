@@ -25,6 +25,7 @@ export default function PopularProducts({ data }) {
     rating: p.product_rating || 0,
     category_id: p.category_id,
     sub_category_id: p.sub_category_id,
+    type: "product",
   }));
 
   return (
