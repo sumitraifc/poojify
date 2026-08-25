@@ -91,8 +91,9 @@ export default function Cart() {
       ? Math.round(subtotal * Number(appliedCoupon.discount_value) / 100)
       : Number(appliedCoupon.discount_value)
     : 0;
-  const deliveryCharge = subtotal >= 499 || items.length === 0 ? 0 : 49;
-  const grandTotal = subtotal - couponDiscount + deliveryCharge;
+  // const deliveryCharge = subtotal >= 499 || items.length === 0 ? 0 : 49;
+  const grandTotal = subtotal - couponDiscount ;
+  // const grandTotal = subtotal - couponDiscount + deliveryCharge;
 
   if (isLoading) return <PageLoader />;
 
@@ -328,12 +329,13 @@ export default function Cart() {
                 <h3 className="mb-4 font-semibold">Order Summary</h3>
                 <div className="space-y-2 text-sm">
                   <Row label={`Subtotal (${items.length} Items)`} value={formatINR(subtotal)} />
-                  {productDiscount > 0 && <Row label="Product Discount" value={`- ${formatINR(productDiscount)}`} valueClass="text-success" />}
+                  {/* {productDiscount > 0 && <Row label="Product Discount" value={`- ${formatINR(productDiscount)}`} valueClass="text-success" />} */}
                   {couponDiscount > 0 && <Row label={`Coupon (${appliedCoupon.code})`} value={`- ${formatINR(couponDiscount)}`} valueClass="text-success" />}
-                  <Row label="Delivery Charges" value={deliveryCharge === 0 ? "FREE" : formatINR(deliveryCharge)} valueClass={deliveryCharge === 0 ? "text-success" : ""} />
+                  {/* <Row label="Delivery Charges" value={deliveryCharge === 0 ? "FREE" : formatINR(deliveryCharge)} valueClass={deliveryCharge === 0 ? "text-success" : ""} /> */}
                 </div>
                 <div className="mt-3 flex items-center justify-between border-t border-ink-500/10 pt-3">
                   <span className="font-semibold">Grand Total</span>
+                  {/* <span className="text-lg font-bold text-primary-600">{formatINR(subtotal)}</span> */}
                   <span className="text-lg font-bold text-primary-600">{formatINR(grandTotal)}</span>
                 </div>
                 <Button fullWidth className="mt-4" onClick={() => {
