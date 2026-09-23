@@ -64,6 +64,10 @@ export default function Cart() {
   function applyCoupon(code) {
     const coupon = (coupons ?? []).find((c) => c.code.trim().toLowerCase() === code.trim().toLowerCase());
     if (!coupon) return showToast.error("Invalid coupon code");
+    if (!coupon.is_active) return showToast.error("This coupon is no longer active");
+    const now = new Date();
+    if (new Date(coupon.expiry_date) < now) return showToast.error("This coupon has expired");
+    if (new Date(coupon.start_date) > now) return showToast.error("This coupon is not valid yet");
     if (subtotal < Number(coupon.min_order_amount))
       return showToast.error(`Min order ${formatINR(coupon.min_order_amount)} required`);
     setAppliedCoupon(coupon);
@@ -304,20 +308,26 @@ export default function Cart() {
                       exit={{ opacity: 0, height: 0 }}
                       className="mt-3 space-y-2 overflow-hidden"
                     >
-                      {(coupons ?? []).map((c) => (
-                        <div key={c.id} className="flex items-center justify-between rounded-lg border border-dashed border-primary-300 bg-primary-50 px-3 py-2.5">
+                      {(coupons ?? []).map((c) => {
+                        const expired = new Date(c.expiry_date) < new Date();
+                        return (
+                        <div key={c.id} className={`flex items-center justify-between rounded-lg border border-dashed px-3 py-2.5 ${expired ? "border-ink-300 bg-ink-50 opacity-60" : "border-primary-300 bg-primary-50"}`}>
                           <div>
-                            <p className="text-sm font-bold text-primary-700">{c.code}</p>
+                            <p className={`text-sm font-bold ${expired ? "text-ink-400" : "text-primary-700"}`}>{c.code}</p>
                             <p className="text-xs text-ink-500">
                               {c.discount_type === "percent" ? `${c.discount_value}% off` : `₹${c.discount_value} off`}
                               {" · "}Min order {formatINR(c.min_order_amount)}
                             </p>
+                            {expired && <p className="text-[11px] text-danger font-medium">Expired</p>}
                           </div>
-                          <button onClick={() => applyCoupon(c.code)} className="text-xs font-semibold text-primary-600 hover:underline">
-                            Apply
-                          </button>
+                          {!expired && (
+                            <button onClick={() => applyCoupon(c.code)} className="text-xs font-semibold text-primary-600 hover:underline">
+                              Apply
+                            </button>
+                          )}
                         </div>
-                      ))}
+                        );
+                      })}
                     </motion.div>
                   )}
                 </AnimatePresence>

@@ -22,10 +22,11 @@ axiosClient.interceptors.response.use(
     const message =
       error?.response?.data?.message || error?.message || "Something went wrong. Please try again.";
 
-    if (error?.response?.status === 401) {
+    const status = error?.response?.status;
+    const isInvalidToken = status === 403 && message === "Invalid token";
+    if (status === 401 || isInvalidToken) {
       useAuthStore.getState().logout();
       toast.error("Please login to continue");
-      // dispatch custom event so LoginDrawer can open
       window.dispatchEvent(new CustomEvent("poojify:require-login"));
     }
 

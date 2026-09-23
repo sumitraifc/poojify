@@ -34,7 +34,7 @@ export default function ComboOffers({ data }) {
                   {combo.discount_percentage}% OFF
                 </span>
               )}
-              <img src={combo.image} alt={combo.name} className="h-32 w-full rounded-lg object-cover" loading="lazy" />
+              <img src={combo.image} alt={combo.name} className="h-auto w-full rounded-lg object-contain" loading="lazy" />
               <h3 className="mt-3 text-sm font-semibold line-clamp-2">{combo.name}</h3>
               <div className="mt-2 flex items-baseline gap-2">
                 <span className="font-bold text-primary-600">{formatINR(combo.discount_price ?? combo.price)}</span>

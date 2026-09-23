@@ -19,6 +19,18 @@ export const useAuthStore = create(
       },
       updateUser: (partial) =>
         set((state) => ({ user: { ...state.user, ...partial } })),
+
+      validateToken: async () => {
+        const { token, logout } = useAuthStore.getState();
+        if (!token) return;
+        try {
+          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || "https://root.poojify.in/api"}/profile`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const data = await res.json();
+          if (res.status === 403 || data?.status === 403) logout();
+        } catch {}
+      },
     }),
     { name: "poojify-auth" }
   )

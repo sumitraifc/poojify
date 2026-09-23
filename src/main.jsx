@@ -9,6 +9,7 @@ import "./index.css";
 import { useThemeStore } from "./store/themeStore.js";
 import { useLocationStore } from "./store/locationStore.js";
 import { useSettingsStore } from "./store/settingsStore.js";
+import { useAuthStore } from "./store/authStore.js";
 import AppRoutes from "./Routes.jsx";
 import { setQueryClientRef } from "./store/authStore.js";
 
@@ -18,6 +19,7 @@ document.documentElement.classList.toggle("dark", useThemeStore.getState().theme
 // Ask for the user's location only once, ever — first app load only (see captureOnce)
 useLocationStore.getState().captureOnce();
 useSettingsStore.getState().load();
+useAuthStore.getState().validateToken();
 
 const queryClient = new QueryClient({
   defaultOptions: {

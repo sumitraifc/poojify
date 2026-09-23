@@ -38,7 +38,7 @@ export default function ComboOffersPage() {
                   {combo.off && (
                     <span className="absolute left-3 top-3 badge bg-primary-500 text-white">{combo.off}% OFF</span>
                   )}
-                  <img src={combo.image} alt={combo.name} className="h-36 w-full rounded-lg object-cover" />
+                  <img src={combo.image} alt={combo.name} className="h-auto w-full rounded-lg object-contain" />
                   <h3 className="mt-3 font-semibold">{combo.name}</h3>
                   {combo.desc && <p className="mt-1 text-xs text-ink-500">{combo.desc}</p>}
                   <div className="mt-2 flex items-baseline gap-2">
