@@ -9,6 +9,7 @@ import { useAuthStore } from "../../store/authStore";
 import { showToast } from "../../components/common/Toast";
 import { sendOtp, verifyOtp } from "../../api/authApi";
 import { getProfile } from "../../api/userApi";
+import { getFcmToken } from "../../firebase";
 
 export default function LoginDrawer({ open, onClose }) {
   const login = useAuthStore((s) => s.login);
@@ -93,7 +94,8 @@ export default function LoginDrawer({ open, onClose }) {
     if (otpStr.length !== 4) return showToast.error("Enter complete 4-digit OTP");
     setLoading(true);
     try {
-      const res = await verifyOtp(mobile, otpStr);
+      const fcmToken = await getFcmToken();
+      const res = await verifyOtp(mobile, otpStr, fcmToken || "web-fcm-token");
       login({ phone: `+91 ${mobile}` }, res.token);
       // fetch real profile after login
       try {

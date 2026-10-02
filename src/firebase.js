@@ -30,7 +30,7 @@ export async function getFcmToken() {
 
     return token || null;
   } catch (err) {
-    console.error("FCM token error:", err);
+    console.error("FCM token error:", err.code, err.message);
     return null;
   }
 }

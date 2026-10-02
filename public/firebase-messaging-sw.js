@@ -2,12 +2,12 @@ importScripts("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 importScripts("https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js");
 
 firebase.initializeApp({
-  apiKey: "YOUR_API_KEY",
-  authDomain: "poojify-66ccd.firebaseapp.com",
-  projectId: "poojify-66ccd",
-  storageBucket: "poojify-66ccd.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID",
+  apiKey: "AIzaSyBJSkEfC3FmkBdohxv6glPGafFwW8IjulU",
+  authDomain: "poojify-59855.firebaseapp.com",
+  projectId: "poojify-59855",
+  storageBucket: "poojify-59855.firebasestorage.app",
+  messagingSenderId: "413639924690",
+  appId: "1:413639924690:web:22469d0721abf418bf060b",
 });
 
 const messaging = firebase.messaging();

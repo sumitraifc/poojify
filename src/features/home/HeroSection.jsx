@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function HeroSection({ data }) {
   const [index, setIndex] = useState(0);
+  const navigate = useNavigate();
 
   // data is array from API: [{ slides: [{ image, category_id }] }]
   const slides = data?.[0]?.slides?.map((s) => s.image) || [];
@@ -29,7 +31,8 @@ export default function HeroSection({ data }) {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.6 }}
-              className="w-full h-auto block"
+              className="w-full h-auto block cursor-pointer"
+              onClick={() => navigate("/shop")}
             />
           </AnimatePresence>
 
