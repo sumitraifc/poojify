@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { LayoutGrid, List } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
 import Breadcrumb from "../components/common/Breadcrumb";
@@ -16,6 +17,8 @@ export default function Shop() {
   const [view, setView] = useState("grid");
   const [sort, setSort] = useState("popularity");
   const [page, setPage] = useState(1);
+  const [searchParams] = useSearchParams();
+  const categoryFromUrl = searchParams.get("category");
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -31,7 +34,10 @@ export default function Shop() {
   });
 
   useEffect(() => {
-    if (categories.length > 0 && !activeCat) setActiveCat(categories[0].id);
+    if (categories.length > 0 && !activeCat) {
+      const id = categoryFromUrl ? Number(categoryFromUrl) : categories[0].id;
+      setActiveCat(id);
+    }
   }, [categories]);
 
   useEffect(() => {

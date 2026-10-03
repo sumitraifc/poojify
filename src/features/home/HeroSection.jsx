@@ -8,7 +8,7 @@ export default function HeroSection({ data }) {
   const navigate = useNavigate();
 
   // data is array from API: [{ slides: [{ image, category_id }] }]
-  const slides = data?.[0]?.slides?.map((s) => s.image) || [];
+  const slides = data?.[0]?.slides || [];
 
   useEffect(() => {
     if (slides.length <= 1) return;
@@ -25,14 +25,14 @@ export default function HeroSection({ data }) {
           <AnimatePresence mode="wait">
             <motion.img
               key={index}
-              src={slides[index]}
+              src={slides[index]?.image}
               alt="Pooja essentials"
               initial={{ opacity: 0, scale: 1.03 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.6 }}
               className="w-full h-auto block cursor-pointer"
-              onClick={() => navigate("/shop")}
+              onClick={() => navigate(`/shop?category=${slides[index]?.category_id}`)}
             />
           </AnimatePresence>
 

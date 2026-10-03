@@ -434,7 +434,7 @@ export default function ProductDetail({ type = "product" }) {
                       {p.discount_percentage > 0 && (
                         <span className="absolute left-2 top-2 badge bg-primary-500 text-white text-[10px]">{p.discount_percentage}% OFF</span>
                       )}
-                      <img src={p.main_image} alt={p.name} className="aspect-square w-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      <img src={p.main_image || p.image} alt={p.name} className="aspect-square w-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     </div>
                     <p className="mt-2 text-xs font-medium line-clamp-2">{p.name}</p>
                     <div className="mt-1 flex items-baseline gap-1.5">
