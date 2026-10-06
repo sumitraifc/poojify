@@ -38,7 +38,7 @@ export const useLocationStore = create(
             } catch {}
           },
           () => { set({ captured: true }); },
-          { enableHighAccuracy: true, timeout: 8000 }
+          { enableHighAccuracy: true, timeout: 80000 }
         );
       },
     }),

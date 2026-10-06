@@ -43,4 +43,5 @@ export const deletePanditAccount = () => axiosClient.delete("/delete-pandit-acco
 export const registerPandit = (formData) =>
   axiosClient.post("/pandit/register", formData, {
     headers: { "Content-Type": "multipart/form-data" },
+    timeout: 0,
   });

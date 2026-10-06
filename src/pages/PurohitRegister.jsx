@@ -86,7 +86,7 @@ export default function PurohitRegister() {
     navigator.geolocation.getCurrentPosition(
       (pos) => pinLocation(pos.coords.latitude, pos.coords.longitude),
       () => pinLocation(26.8467, 80.9462),
-      { enableHighAccuracy: true, timeout: 8000 }
+      { enableHighAccuracy: true, timeout: 80000 }
     );
   }, []);
 

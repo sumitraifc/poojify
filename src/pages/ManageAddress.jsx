@@ -303,7 +303,7 @@ export default function ManageAddress() {
         reverseGeocode(26.8467, 80.9462);
         setLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 8000 }
+      { enableHighAccuracy: true, timeout: 80000 }
     );
   }
 
@@ -322,7 +322,7 @@ export default function ManageAddress() {
         showToast.success("Location detected!");
       },
       () => { showToast.error("Allow location permission"); setLocating(false); },
-      { enableHighAccuracy: true, timeout: 8000 }
+      { enableHighAccuracy: true, timeout: 80000 }
     );
   }
 
