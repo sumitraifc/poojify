@@ -57,7 +57,7 @@ export default function PurohitRegister() {
     id_type: "aadhaar", id_number: "",
     house_no: "", city: "", area: "", pincode: "", state: "",
     religion_id: "", experience_years: "", service_radius: "",
-    language_ids: [], pooja_ids: [],
+    language_ids: [], pooja_ids: [], pooja_prices: {},
   });
   const [files, setFiles] = useState({
     profile_image: null, document_proof: null, document_proof_back: null,
@@ -224,6 +224,10 @@ export default function PurohitRegister() {
     }));
   }
 
+  function setPoojaPrice(id, price) {
+    setForm((f) => ({ ...f, pooja_prices: { ...f.pooja_prices, [id]: price } }));
+  }
+
   function onFileChange(key, e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -249,7 +253,12 @@ export default function PurohitRegister() {
       const fd = new FormData();
       // text fields
       Object.entries(form).forEach(([k, v]) => {
-        if (Array.isArray(v)) fd.append(k, JSON.stringify(v));
+        if (k === "pooja_ids") {
+          const arr = v.map((id) => ({ id, price: Number(form.pooja_prices[id] || 0) }));
+          fd.append(k, JSON.stringify(arr));
+        } else if (k === "pooja_prices") {
+          // skip, already merged above
+        } else if (Array.isArray(v)) fd.append(k, JSON.stringify(v));
         else fd.append(k, v);
       });
       fd.append("latitude", String(lat ?? ""));
@@ -540,10 +549,22 @@ export default function PurohitRegister() {
                   <label className="label">Pooja Specializations <span className="text-danger">*</span></label>
                   <div className="flex flex-wrap gap-2">
                     {poojaList.map((p) => (
-                      <button key={p.id} type="button" onClick={() => toggleArr("pooja_ids", p.id)}
-                        className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${form.pooja_ids.includes(p.id) ? "border-primary-500 bg-primary-50 text-primary-600" : "border-ink-500/15 text-ink-500 hover:border-primary-300"}`}>
-                        {p.name}
-                      </button>
+                      <div key={p.id} className="flex flex-col gap-1">
+                        <button type="button" onClick={() => toggleArr("pooja_ids", p.id)}
+                          className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${form.pooja_ids.includes(p.id) ? "border-primary-500 bg-primary-50 text-primary-600" : "border-ink-500/15 text-ink-500 hover:border-primary-300"}`}>
+                          {p.name}
+                        </button>
+                        {form.pooja_ids.includes(p.id) && (
+                          <input
+                            type="number"
+                            min={0}
+                            placeholder="Price ₹"
+                            value={form.pooja_prices[p.id] || ""}
+                            onChange={(e) => setPoojaPrice(p.id, e.target.value)}
+                            className="w-24 rounded-lg border border-ink-500/15 px-2 py-1 text-xs outline-none focus:border-primary-500"
+                          />
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>
